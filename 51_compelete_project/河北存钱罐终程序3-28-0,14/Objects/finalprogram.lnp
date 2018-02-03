@@ -1,0 +1,6 @@
+".\Objects\STARTUP.obj",
+".\Objects\flash.obj",
+".\Objects\main.obj",
+".\Objects\oled.obj" 
+TO ".\Objects\finalprogram" 
+PRINT(".\Listings\finalprogram.m51")

@@ -1,0 +1,304 @@
+C51 COMPILER V9.52.0.0   MAIN                                                              04/05/2017 12:41:54 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listing
+                    -s\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /******************************************************************************
+   2          
+   3                    版权所有 (C), 2011-2012, 信意电子科技(http://xydz123.taobao.com/)
+   4          
+   5           ******************************************************************************
+   6            文 件 名   : main.c
+   7            版 本 号   : v1.0
+   8            作    者   : Guokaiyi
+   9            生成日期   : 2017-3-28
+  10            最近修改   : 
+  11            功能描述   : OLED演示例程(51系列)
+  12                         说明: 
+  13                         ----------------------------------------------------------------
+  14                         G    电源地
+  15                         VCC  接5V或3.3v电源
+  16                         D0   P1^0（SCLK）
+  17                         D1   P1^1（MOSI）
+  18                         RST  P1^2
+  19                         DC   P1^3
+  20                         CS   已经默认选中，可以不接                   
+  21                         ----------------------------------------------------------------
+  22            修改历史   :
+  23            1.日    期   : 2017-3-28
+  24              作    者   :  刘伟，余昊川
+  25              修改内容   : 创建文件
+  26          
+  27          ******************************************************************************/
+  28          
+  29          /*----------------------------------------------------------------------------*
+  30           * 包含头文件                                                                 *
+  31           *----------------------------------------------------------------------------*/
+  32          #include "common.h"
+  33          #include "oled.h"
+  34          #include "flash.h"
+  35          
+  36          VOID MAIN_Init(VOID); //初始化函数
+  37          VOID MAIN_OLED_Display(VOID); //OLED显示函数
+  38          VOID MAIN_TIME_Delay(USHORT16 usTime); //延时函数
+  39          void display_init();
+  40          void timer_init();//定时器初始化
+  41          static long int tt=0,money;
+  42          /*----------------------------------------------------------------------------*
+  43           * 外部函数原型                                                               *
+  44           *----------------------------------------------------------------------------*/
+  45          sbit p16=P1^6;//传感器1角引脚
+  46          sbit p15=P1^5;//传感器5角引脚
+  47          sbit p14=P1^4;//传感器1元引脚
+  48          sbit p17=P1^7;//定义外部清除引脚
+  49          VOID main(void) 
+  50          {
+  51   1          LED_Init();
+  52   1          timer_init();//开启定时器计时30s
+  53   1          MAIN_OLED_Display();      
+  54   1      }  
+C51 COMPILER V9.52.0.0   MAIN                                                              04/05/2017 12:41:54 PAGE 2   
+
+  55          
+  56          VOID MAIN_OLED_Display(VOID)
+  57          {
+  58   1          int i=0,j=0,k=0,l,m;
+  59   1          long int temp1,temp2,y=0,wj=0,yj=0;
+  60   1          p16=0xff;
+  61   1          p14=0xff;
+  62   1          p15=0xff;
+  63   1          p17=0xff;     
+  64   1          display_init();  
+  65   1          while(1)
+  66   1          {     
+  67   2            timer_init();//开启定时器计时30s
+  68   2            if(p16==0xff|p15==0xff|p14==0xff) //有硬币进入   
+  69   2           {    
+  70   3            temp1=money;
+  71   3            EA=1;//开启定时器0       
+  72   3            while(tt<1500)//30s延时
+  73   3            {
+  74   4              if(p16==0xff)//1角
+  75   4            {
+  76   5               money=money+1; 
+  77   5               yj=yj+1;
+  78   5               i=yj/1000;//千位
+  79   5               display_num(96,4,i);
+  80   5               j=yj/100-i*10;//百位
+  81   5               display_num(103,4,j);
+  82   5               k=yj%100/10;//十位
+  83   5               display_num(110,4,k);
+  84   5               l=yj%10;//个位     
+  85   5               display_num(117,4,l);    
+  86   5               MAIN_TIME_Delay(17);       
+  87   5            }
+  88   4            if(p15==0xff)//5角
+  89   4            {       
+  90   5              money=money+5;
+  91   5              wj=wj+1;
+  92   5              i=wj/100;//百位
+  93   5              display_num(68,4,i);
+  94   5              j=wj/10-i*10;//十位
+  95   5              display_num(75,4,j);
+  96   5              k=wj%10;//个位  
+  97   5              display_num(82,4,k);//5毛定位初始化       
+  98   5              MAIN_TIME_Delay(17);          
+  99   5            }
+ 100   4            if(p14==0xff)//1元
+ 101   4            {       
+ 102   5              money=money+10; 
+ 103   5              y=y+1;//元数值加一
+ 104   5              i=y/1000;//千位
+ 105   5              display_num(33,4,i);
+ 106   5              j=y/100-i*10;//百位
+ 107   5              display_num(40,4,j);
+ 108   5              k=y%100/10;//十位
+ 109   5              display_num(47,4,k);
+ 110   5              l=y%10;//个位     
+ 111   5              display_num(54,4,l);        
+ 112   5              MAIN_TIME_Delay(15);          
+ 113   5            } 
+ 114   4              i=money/10000;//千位
+ 115   4              display_num(53,2,i);//千位      
+ 116   4              j=money/1000-i*10;//百位
+C51 COMPILER V9.52.0.0   MAIN                                                              04/05/2017 12:41:54 PAGE 3   
+
+ 117   4              display_num(61,2,j);//百位      
+ 118   4              k=money/100-i*100-j*10;//十位
+ 119   4              display_num(69,2,k);//十位
+ 120   4              l=money%100/10;//个位
+ 121   4              display_num(77,2,l);//个位
+ 122   4              m=money%10;//角位
+ 123   4              display_num(100,2,m);     
+ 124   4            }   
+ 125   3            tt=0;//定时器归位     
+ 126   3            EA=0;//关闭定时器0        
+ 127   3             if(money>=99999)//当计数大于9999元的时候置0
+ 128   3              {
+ 129   4                 money=0;
+ 130   4              }           
+ 131   3           temp2=money-temp1;//求出此次投入钱的多少     
+ 132   3           //i=temp2/1000;//百位                      //此部分用于显示并储存此次投入钱的数值    
+ 133   3           //display_num(61,6,i);//百位               //此部分用于显示并储存此次投入钱的数值
+ 134   3           j=temp2/100-i*10;//十位                  //此部分用于显示并储存此次投入钱的数值    
+ 135   3           display_num(69,6,j);//十位               //此部分用于显示并储存此次投入钱的数值
+ 136   3           k=temp2%100/10;//个位                    //此部分用于显示并储存此次投入钱的数值     
+ 137   3           display_num(77,6,k);//个位               //此部分用于显示并储存此次投入钱的数值
+ 138   3           l=temp2%10;//角                          //此部分用于显示并储存此次投入钱的数值     
+ 139   3           display_num(100,6,l);//个位              //此部分用于显示并储存此次投入钱的数值 
+ 140   3            
+ 141   3          }
+ 142   2           
+ 143   2           if(p17==0x00)//当外部清除按键被按下则清除数据
+ 144   2            {       
+ 145   3              money=0;
+ 146   3              temp2=0;  
+ 147   3              y=0;
+ 148   3              wj=0;
+ 149   3              yj=0;       
+ 150   3              i=money/10000;//千位
+ 151   3              display_num(53,2,i);//千位      
+ 152   3              j=money/1000-i*10;//百位
+ 153   3              display_num(61,2,j);//百位      
+ 154   3              k=money/100-i*100-j*10;//十位
+ 155   3              display_num(69,2,k);//十位
+ 156   3              l=money%100/10;//个位
+ 157   3              display_num(77,2,l);//个位
+ 158   3              m=money%10;//角位
+ 159   3              display_num(100,2,m);  
+ 160   3              i=temp2/1000;//百位                      //此部分用于显示并储存此次投入钱的数值        
+ 161   3              display_num(61,6,i);//百位               //此部分用于显示并储存此次投入钱的数值
+ 162   3              j=temp2/100-i*10;//十位                  //此部分用于显示并储存此次投入钱的数值       
+ 163   3              display_num(69,6,j);//十位               //此部分用于显示并储存此次投入钱的数值
+ 164   3              k=temp2%100/10;//个位                    //此部分用于显示并储存此次投入钱的数值      
+ 165   3              display_num(77,6,k);//个位               //此部分用于显示并储存此次投入钱的数值
+ 166   3              l=temp2%10;//角                          //此部分用于显示并储存此次投入钱的数值       
+ 167   3              display_num(100,6,l);//个位              //此部分用于显示并储存此次投入钱的数值         
+ 168   3              
+ 169   3              i=y/1000;//千位
+ 170   3              display_num(33,4,i);
+ 171   3              j=y/100-i*10;//百位
+ 172   3              display_num(40,4,j);
+ 173   3              k=y%100/10;//十位
+ 174   3              display_num(47,4,k);
+ 175   3              l=y%10;//个位     
+ 176   3              display_num(54,4,l);          
+ 177   3              i=wj/100;//百位
+ 178   3              display_num(68,4,i);
+C51 COMPILER V9.52.0.0   MAIN                                                              04/05/2017 12:41:54 PAGE 4   
+
+ 179   3              j=wj/10-i*10;//十位
+ 180   3              display_num(75,4,j);
+ 181   3              k=wj%10;//个位  
+ 182   3              display_num(82,4,k);//        
+ 183   3               i=yj/1000;//千位
+ 184   3               display_num(96,4,i);
+ 185   3               j=yj/100-i*10;//百位
+ 186   3               display_num(103,4,j);
+ 187   3               k=yj%100/10;//十位
+ 188   3               display_num(110,4,k);
+ 189   3               l=yj%10;//个位     
+ 190   3               display_num(117,4,l);  
+ 191   3            }
+ 192   2            else
+ 193   2            {
+ 194   3              ;
+ 195   3            }
+ 196   2          }   
+ 197   1      }
+ 198          void timer_init()//定时器初始化
+ 199          {
+ 200   1        TL0=0Xff;
+ 201   1        TH0=0X4b;
+ 202   1        ET0=1;//启动定时器0中断
+ 203   1        TR0=1;//启动定时器0 
+ 204   1        EA=0;
+ 205   1      }
+ 206          void timer_0() interrupt 1
+ 207          {
+ 208   1        TL0=0Xff;
+ 209   1        TH0=0X4c;//定时0.1ms
+ 210   1        tt++;   
+ 211   1      }
+ 212          
+ 213          void display_init()//显示初始化
+ 214          {
+ 215   1          int k,i,j,l,m;
+ 216   1          money=0;//清零
+ 217   1          LED_P14x16Str(0, 0, (UCHAR8*)"已存入总金额："); 
+ 218   1          LED_P14x16Str(85, 1, (UCHAR8*)"元");
+ 219   1          LED_P14x16Str(110, 1, (UCHAR8*)"角");   
+ 220   1          LED_P14x16Str(0, 3, (UCHAR8*)"上次金额：");
+ 221   1          LED_P14x16Str(85, 3, (UCHAR8*)"元");
+ 222   1          LED_P14x16Str(110, 3, (UCHAR8*)"角"); 
+ 223   1          LED_P14x16Str(0, 2, (UCHAR8*)"数量：");
+ 224   1          LED_P8x16Str(60, 2, (UCHAR8*)"-");
+ 225   1          LED_P8x16Str(87, 2, (UCHAR8*)"-");
+ 226   1          display_num(33,4,0);
+ 227   1          display_num(40,4,0);
+ 228   1          display_num(47,4,0);
+ 229   1          display_num(54,4,0);//元定位初始化
+ 230   1        
+ 231   1          display_num(68,4,0);
+ 232   1          display_num(75,4,0);
+ 233   1          display_num(82,4,0);//5毛定位初始化
+ 234   1          
+ 235   1        
+ 236   1          display_num(96,4,0);
+ 237   1          display_num(103,4,0);
+ 238   1          display_num(110,4,0);
+ 239   1          display_num(117,4,0);//1毛定位初始化
+ 240   1              i=money/10000;//千位
+C51 COMPILER V9.52.0.0   MAIN                                                              04/05/2017 12:41:54 PAGE 5   
+
+ 241   1              display_num(53,2,i);//千位      
+ 242   1              j=money/1000-i*10;//百位
+ 243   1              display_num(61,2,j);//百位      
+ 244   1              k=money/100-i*100-j*10;//十位
+ 245   1              display_num(69,2,k);//十位
+ 246   1              l=money%100/10;//个位
+ 247   1              display_num(77,2,l);//个位
+ 248   1              m=money%10;//角位
+ 249   1              display_num(100,2,m);   
+ 250   1      }
+ 251          /*****************************************************************************
+ 252           函 数 名  : MAIN_TIME_Delay
+ 253           功能描述  : 在12MHz晶振 1T下 延时时间约等于usTime ms
+ 254           输入参数  : USHORT16 usTime  
+ 255           输出参数  : NONE
+ 256           返 回 值  : 
+ 257          *****************************************************************************/
+ 258          VOID MAIN_TIME_Delay(USHORT16 usTime)
+ 259          {
+ 260   1          UCHAR8 j;
+ 261   1          LONG32 i;
+ 262   1          
+ 263   1          for (i = (LONG32)10 * usTime; i > 0; i--)
+ 264   1          {
+ 265   2              for(j = 110; j > 0; j--)
+ 266   2              {
+ 267   3              }
+ 268   2          }
+ 269   1      
+ 270   1          return;
+ 271   1      }
+ 272          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3277    ----
+   CONSTANT SIZE    =     40    ----
+   XDATA SIZE       =      8      38
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

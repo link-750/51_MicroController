@@ -1,0 +1,985 @@
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE OLED
+OBJECT MODULE PLACED IN .\Objects\oled.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE oled.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listing
+                    -s\oled.lst) TABS(2) OBJECT(.\Objects\oled.obj)
+
+line level    source
+
+   1          /******************************************************************************
+   2          
+   3                    版权所有 (C), 2011-2012, 信意电子科技(http://xydz123.taobao.com/)
+   4          
+   5           ******************************************************************************
+   6            文 件 名   : oled.c
+   7            版 本 号   : v1.0
+   8            作    者   : Guokaiyi
+   9            生成日期   : 2012-12-1
+  10            最近修改   : 
+  11            功能描述   : LED128x64OLED显示屏底层驱动
+  12            修改历史   :
+  13            1.日    期   : 2012-12-1
+  14              作    者   : Guokaiyi
+  15              修改内容   : 创建文件
+  16          ******************************************************************************/
+  17          
+  18          /*----------------------------------------------------------------------------*
+  19           * 包含头文件                                                                 *
+  20           *----------------------------------------------------------------------------*/
+  21          #include <intrins.h>
+  22          #include "oled.h"
+  23          
+  24          /*----------------------------------------------------------------------------*
+  25           * 宏定义                                                                     *
+  26           *----------------------------------------------------------------------------*/
+  27          
+  28          /*----------------------------------------------------------------------------*
+  29           * 全局变量                                                                   *
+  30           *----------------------------------------------------------------------------*/
+  31          sbit LED_SCL = P1^0;  
+  32          sbit LED_SDA = P1^1;
+  33          sbit LED_RST = P1^2; 
+  34          sbit LED_DC  = P1^3; 
+  35           
+  36          const UCHAR8 code F6x8[][6] =
+  37          {
+  38              { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },   //sp0
+  39              { 0x00, 0x00, 0x00, 0x2f, 0x00, 0x00 },   // !1
+  40              { 0x00, 0x00, 0x07, 0x00, 0x07, 0x00 },   // "2
+  41              { 0x00, 0x14, 0x7f, 0x14, 0x7f, 0x14 },   // #3
+  42              { 0x00, 0x24, 0x2a, 0x7f, 0x2a, 0x12 },   // $4
+  43              { 0x00, 0x62, 0x64, 0x08, 0x13, 0x23 },   // %5
+  44              { 0x00, 0x36, 0x49, 0x55, 0x22, 0x50 },   // &6
+  45              { 0x00, 0x00, 0x05, 0x03, 0x00, 0x00 },   // '7
+  46              { 0x00, 0x00, 0x1c, 0x22, 0x41, 0x00 },   // (8
+  47              { 0x00, 0x00, 0x41, 0x22, 0x1c, 0x00 },   // )9
+  48              { 0x00, 0x14, 0x08, 0x3E, 0x08, 0x14 },   // *10
+  49              { 0x00, 0x08, 0x08, 0x3E, 0x08, 0x08 },   // +11
+  50              { 0x00, 0x00, 0x00, 0xA0, 0x60, 0x00 },   // ,12
+  51              { 0x00, 0x08, 0x08, 0x08, 0x08, 0x08 },   // -13
+  52              { 0x00, 0x00, 0x60, 0x60, 0x00, 0x00 },   // .14
+  53              { 0x00, 0x20, 0x10, 0x08, 0x04, 0x02 },   // /15
+  54              { 0x00, 0x3E, 0x51, 0x49, 0x45, 0x3E },   // 016
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 2   
+
+  55              { 0x00, 0x00, 0x42, 0x7F, 0x40, 0x00 },   // 117
+  56              { 0x00, 0x42, 0x61, 0x51, 0x49, 0x46 },   // 218
+  57              { 0x00, 0x21, 0x41, 0x45, 0x4B, 0x31 },   // 319
+  58              { 0x00, 0x18, 0x14, 0x12, 0x7F, 0x10 },   // 420
+  59              { 0x00, 0x27, 0x45, 0x45, 0x45, 0x39 },   // 521
+  60              { 0x00, 0x3C, 0x4A, 0x49, 0x49, 0x30 },   // 622
+  61              { 0x00, 0x01, 0x71, 0x09, 0x05, 0x03 },   // 723
+  62              { 0x00, 0x36, 0x49, 0x49, 0x49, 0x36 },   // 824
+  63              { 0x00, 0x06, 0x49, 0x49, 0x29, 0x1E },   // 925
+  64              { 0x00, 0x00, 0x36, 0x36, 0x00, 0x00 },   // :26
+  65              { 0x00, 0x00, 0x56, 0x36, 0x00, 0x00 },   // ;27
+  66              { 0x00, 0x08, 0x14, 0x22, 0x41, 0x00 },   // <28
+  67              { 0x00, 0x14, 0x14, 0x14, 0x14, 0x14 },   // =29
+  68              { 0x00, 0x00, 0x41, 0x22, 0x14, 0x08 },   // >30
+  69              { 0x00, 0x02, 0x01, 0x51, 0x09, 0x06 },   // ?31
+  70              { 0x00, 0x32, 0x49, 0x59, 0x51, 0x3E },   // @32
+  71              { 0x00, 0x7C, 0x12, 0x11, 0x12, 0x7C },   // A33
+  72              { 0x00, 0x7F, 0x49, 0x49, 0x49, 0x36 },   // B34
+  73              { 0x00, 0x3E, 0x41, 0x41, 0x41, 0x22 },   // C35
+  74              { 0x00, 0x7F, 0x41, 0x41, 0x22, 0x1C },   // D36
+  75              { 0x00, 0x7F, 0x49, 0x49, 0x49, 0x41 },   // E37
+  76              { 0x00, 0x7F, 0x09, 0x09, 0x09, 0x01 },   // F38
+  77              { 0x00, 0x3E, 0x41, 0x49, 0x49, 0x7A },   // G39
+  78              { 0x00, 0x7F, 0x08, 0x08, 0x08, 0x7F },   // H40
+  79              { 0x00, 0x00, 0x41, 0x7F, 0x41, 0x00 },   // I41
+  80              { 0x00, 0x20, 0x40, 0x41, 0x3F, 0x01 },   // J42
+  81              { 0x00, 0x7F, 0x08, 0x14, 0x22, 0x41 },   // K43
+  82              { 0x00, 0x7F, 0x40, 0x40, 0x40, 0x40 },   // L44
+  83              { 0x00, 0x7F, 0x02, 0x0C, 0x02, 0x7F },   // M45
+  84              { 0x00, 0x7F, 0x04, 0x08, 0x10, 0x7F },   // N46
+  85              { 0x00, 0x3E, 0x41, 0x41, 0x41, 0x3E },   // O47
+  86              { 0x00, 0x7F, 0x09, 0x09, 0x09, 0x06 },   // P48
+  87              { 0x00, 0x3E, 0x41, 0x51, 0x21, 0x5E },   // Q49
+  88              { 0x00, 0x7F, 0x09, 0x19, 0x29, 0x46 },   // R50
+  89              { 0x00, 0x46, 0x49, 0x49, 0x49, 0x31 },   // S51
+  90              { 0x00, 0x01, 0x01, 0x7F, 0x01, 0x01 },   // T52
+  91              { 0x00, 0x3F, 0x40, 0x40, 0x40, 0x3F },   // U53
+  92              { 0x00, 0x1F, 0x20, 0x40, 0x20, 0x1F },   // V54
+  93              { 0x00, 0x3F, 0x40, 0x38, 0x40, 0x3F },   // W55
+  94              { 0x00, 0x63, 0x14, 0x08, 0x14, 0x63 },   // X56
+  95              { 0x00, 0x07, 0x08, 0x70, 0x08, 0x07 },   // Y57
+  96              { 0x00, 0x61, 0x51, 0x49, 0x45, 0x43 },   // Z58
+  97              { 0x00, 0x00, 0x7F, 0x41, 0x41, 0x00 },   // [59
+  98              { 0x00, 0x02, 0x04, 0x08, 0x10, 0x20 },   // \60
+  99              { 0x00, 0x00, 0x41, 0x41, 0x7F, 0x00 },   // ]61
+ 100              { 0x00, 0x04, 0x02, 0x01, 0x02, 0x04 },   // ^62
+ 101              { 0x00, 0x40, 0x40, 0x40, 0x40, 0x40 },   // _63
+ 102              { 0x00, 0x00, 0x01, 0x02, 0x04, 0x00 },   // '64
+ 103              { 0x00, 0x20, 0x54, 0x54, 0x54, 0x78 },   // a65
+ 104              { 0x00, 0x7F, 0x48, 0x44, 0x44, 0x38 },   // b66
+ 105              { 0x00, 0x38, 0x44, 0x44, 0x44, 0x20 },   // c67
+ 106              { 0x00, 0x38, 0x44, 0x44, 0x48, 0x7F },   // d68
+ 107              { 0x00, 0x38, 0x54, 0x54, 0x54, 0x18 },   // e69
+ 108              { 0x00, 0x08, 0x7E, 0x09, 0x01, 0x02 },   // f70
+ 109              { 0x00, 0x18, 0xA4, 0xA4, 0xA4, 0x7C },   // g71
+ 110              { 0x00, 0x7F, 0x08, 0x04, 0x04, 0x78 },   // h72
+ 111              { 0x00, 0x00, 0x44, 0x7D, 0x40, 0x00 },   // i73
+ 112              { 0x00, 0x40, 0x80, 0x84, 0x7D, 0x00 },   // j74
+ 113              { 0x00, 0x7F, 0x10, 0x28, 0x44, 0x00 },   // k75
+ 114              { 0x00, 0x00, 0x41, 0x7F, 0x40, 0x00 },   // l76
+ 115              { 0x00, 0x7C, 0x04, 0x18, 0x04, 0x78 },   // m77
+ 116              { 0x00, 0x7C, 0x08, 0x04, 0x04, 0x78 },   // n78
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 3   
+
+ 117              { 0x00, 0x38, 0x44, 0x44, 0x44, 0x38 },   // o79
+ 118              { 0x00, 0xFC, 0x24, 0x24, 0x24, 0x18 },   // p80
+ 119              { 0x00, 0x18, 0x24, 0x24, 0x18, 0xFC },   // q81
+ 120              { 0x00, 0x7C, 0x08, 0x04, 0x04, 0x08 },   // r82
+ 121              { 0x00, 0x48, 0x54, 0x54, 0x54, 0x20 },   // s83
+ 122              { 0x00, 0x04, 0x3F, 0x44, 0x40, 0x20 },   // t84
+ 123              { 0x00, 0x3C, 0x40, 0x40, 0x20, 0x7C },   // u85
+ 124              { 0x00, 0x1C, 0x20, 0x40, 0x20, 0x1C },   // v86
+ 125              { 0x00, 0x3C, 0x40, 0x30, 0x40, 0x3C },   // w87
+ 126              { 0x00, 0x44, 0x28, 0x10, 0x28, 0x44 },   // x88
+ 127              { 0x00, 0x1C, 0xA0, 0xA0, 0xA0, 0x7C },   // y89
+ 128              { 0x00, 0x44, 0x64, 0x54, 0x4C, 0x44 },   // z90
+ 129              { 0x14, 0x14, 0x14, 0x14, 0x14, 0x14 }    // horiz lines91
+ 130          };
+ 131          
+ 132          //中文字符串原字
+ 133          const UCHAR8 code F14x16_Idx[] = 
+ 134          {
+ 135              "已存入总金额：上次存入金额：元角数量："
+ 136          };
+ 137          
+ 138          //中文字符串编码
+ 139          const UCHAR8 code F14x16[] = 
+ 140          {  
+ 141          0x00,0x00,0xE4,0x84,0x84,0x84,0x84,0x84,0x84,0x84,0xFC,0x00,0x00,0x00,0x00,0x00,
+ 142          0x1F,0x20,0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x38,0x20,0x00,/*"已",0*/
+ 143          0x00,0x08,0x08,0x88,0x68,0x18,0x26,0x28,0x28,0xA8,0x68,0x24,0x00,0x00,0x00,0x04,
+ 144          0x03,0xFF,0x00,0x00,0x04,0x44,0x7F,0x04,0x04,0x04,0x02,0x00,/*"存",1*/
+ 145          0x00,0x00,0x00,0x00,0x04,0x84,0x78,0xE0,0x00,0x00,0x00,0x00,0x00,0x00,0x40,0x40,
+ 146          0x20,0x18,0x04,0x03,0x00,0x00,0x03,0x0C,0x18,0x30,0x20,0x00,/*"入",2*/
+ 147          0x00,0x00,0x00,0xF0,0x22,0x2C,0x20,0x10,0x2C,0x22,0xF0,0x00,0x00,0x00,0x00,0x20,
+ 148          0x18,0x03,0x7E,0x42,0x46,0x4E,0x42,0x7A,0x0B,0x08,0x10,0x00,/*"总",3*/
+ 149          0x00,0x80,0x80,0x40,0xA0,0x98,0x86,0x88,0x90,0xA0,0x40,0xC0,0x80,0x00,0x00,0x40,
+ 150          0x44,0x4C,0x74,0x44,0x7F,0x44,0x64,0x5C,0x4C,0x40,0x40,0x00,/*"金",4*/
+ 151          0x00,0x90,0x68,0xDA,0xCC,0x78,0x08,0xF4,0x24,0x9C,0x24,0x24,0xF2,0x00,0x00,0x08,
+ 152          0x7C,0x47,0x44,0x7D,0x82,0x4F,0x20,0x1F,0x10,0x20,0x67,0x00,/*"额",5*/
+ 153          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+ 154          0x33,0x32,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,/*"：",6*/
+ 155          
+ 156          
+ 157          0x00,0x00,0x00,0x00,0x00,0x00,0xFE,0x40,0x40,0x40,0x40,0x40,0x00,0x00,0x00,0x40,
+ 158          0x40,0x40,0x40,0x40,0x3F,0x40,0x40,0x40,0x40,0x40,0x20,0x00,/*"上",0*/
+ 159          0x00,0x00,0x04,0xF8,0x10,0xC0,0x30,0x2E,0xE0,0x20,0x20,0x20,0x10,0x00,0x00,0x00,
+ 160          0x3F,0x80,0x41,0x20,0x10,0x0E,0x01,0x0E,0x10,0x60,0x40,0x00,/*"次",1*/
+ 161          0x00,0x08,0x08,0x88,0x68,0x18,0x26,0x28,0x28,0xA8,0x68,0x24,0x00,0x00,0x00,0x04,
+ 162          0x03,0xFF,0x00,0x00,0x04,0x44,0x7F,0x04,0x04,0x04,0x02,0x00,/*"存",2*/
+ 163          0x00,0x00,0x00,0x00,0x04,0x84,0x78,0xE0,0x00,0x00,0x00,0x00,0x00,0x00,0x40,0x40,
+ 164          0x20,0x18,0x04,0x03,0x00,0x00,0x03,0x0C,0x18,0x30,0x20,0x00,/*"入",3*/
+ 165          0x00,0x80,0x80,0x40,0xA0,0x98,0x86,0x88,0x90,0xA0,0x40,0xC0,0x80,0x00,0x00,0x40,
+ 166          0x44,0x4C,0x74,0x44,0x7F,0x44,0x64,0x5C,0x4C,0x40,0x40,0x00,/*"金",4*/
+ 167          0x00,0x90,0x68,0xDA,0xCC,0x78,0x08,0xF4,0x24,0x9C,0x24,0x24,0xF2,0x00,0x00,0x08,
+ 168          0x7C,0x47,0x44,0x7D,0x82,0x4F,0x20,0x1F,0x10,0x20,0x67,0x00,/*"额",5*/
+ 169          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+ 170          0x33,0x32,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,/*"：",6*/
+ 171          0x00,0x40,0x40,0x44,0x44,0xC4,0x44,0x44,0xC4,0x44,0x44,0x40,0x40,0x00,0x00,0x80,
+ 172          0x40,0x20,0x1C,0x03,0x00,0x00,0x7F,0x40,0x40,0x40,0x7C,0x00,/*"元",0*/
+ 173          0x00,0x00,0x40,0xF0,0x2C,0x2A,0x28,0xF8,0x28,0x20,0x20,0xE0,0x00,0x00,0x00,0x40,
+ 174          0x20,0x1F,0x05,0x05,0x05,0x7F,0x05,0x45,0x45,0x7F,0x00,0x00,/*"角",0*/
+ 175          0x00,0x00,0xAC,0x60,0xFE,0x68,0xE4,0xE0,0xFC,0x22,0x20,0xE0,0x10,0x00,0x00,0x01,
+ 176          0x4C,0x57,0x34,0x1C,0xA7,0x40,0x23,0x1C,0x3F,0x60,0x40,0x00,/*"数",0*/
+ 177          0x00,0x40,0x40,0xFE,0x64,0x64,0x64,0x64,0x64,0x64,0xDE,0x40,0x60,0x00,0x00,0x00,
+ 178          0x40,0x6F,0x6B,0x6B,0x7F,0x6B,0x6B,0x6B,0x5F,0x40,0x40,0x00,/*"量",1*/
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 4   
+
+ 179          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+ 180          0x33,0x32,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,/*"：",2*/
+ 181          };
+ 182          
+ 183          //======================================================
+ 184          // 128X64OLED液晶底层驱动[8X16]字体库
+ 185          // 设计者: Guokaiyi
+ 186          // 描  述: [8X16]西文字符的字模数据 (纵向取模,字节倒序)
+ 187          // !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+ 188          //======================================================
+ 189          const UCHAR8 code F8X16[]=
+ 190          {
+ 191              0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,// 0
+ 192              0x00,0x00,0x00,0xF8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x33,0x30,0x00,0x00,0x00,//!1
+ 193              0x00,0x10,0x0C,0x06,0x10,0x0C,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//"2
+ 194              0x40,0xC0,0x78,0x40,0xC0,0x78,0x40,0x00,0x04,0x3F,0x04,0x04,0x3F,0x04,0x04,0x00,//#3
+ 195              0x00,0x70,0x88,0xFC,0x08,0x30,0x00,0x00,0x00,0x18,0x20,0xFF,0x21,0x1E,0x00,0x00,//$4
+ 196              0xF0,0x08,0xF0,0x00,0xE0,0x18,0x00,0x00,0x00,0x21,0x1C,0x03,0x1E,0x21,0x1E,0x00,//%5
+ 197              0x00,0xF0,0x08,0x88,0x70,0x00,0x00,0x00,0x1E,0x21,0x23,0x24,0x19,0x27,0x21,0x10,//&6
+ 198              0x10,0x16,0x0E,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//'7
+ 199              0x00,0x00,0x00,0xE0,0x18,0x04,0x02,0x00,0x00,0x00,0x00,0x07,0x18,0x20,0x40,0x00,//(8
+ 200              0x00,0x02,0x04,0x18,0xE0,0x00,0x00,0x00,0x00,0x40,0x20,0x18,0x07,0x00,0x00,0x00,//)9
+ 201              0x40,0x40,0x80,0xF0,0x80,0x40,0x40,0x00,0x02,0x02,0x01,0x0F,0x01,0x02,0x02,0x00,//*10
+ 202              0x00,0x00,0x00,0xF0,0x00,0x00,0x00,0x00,0x01,0x01,0x01,0x1F,0x01,0x01,0x01,0x00,//+11
+ 203              0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x80,0xB0,0x70,0x00,0x00,0x00,0x00,0x00,//,12
+ 204              0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,0x01,0x01,0x01,0x01,//-13
+ 205              0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x30,0x30,0x00,0x00,0x00,0x00,0x00,//.14
+ 206              0x00,0x00,0x00,0x00,0x80,0x60,0x18,0x04,0x00,0x60,0x18,0x06,0x01,0x00,0x00,0x00,///15
+ 207              0x00,0xE0,0x10,0x08,0x08,0x10,0xE0,0x00,0x00,0x0F,0x10,0x20,0x20,0x10,0x0F,0x00,//016
+ 208              0x00,0x10,0x10,0xF8,0x00,0x00,0x00,0x00,0x00,0x20,0x20,0x3F,0x20,0x20,0x00,0x00,//117
+ 209              0x00,0x70,0x08,0x08,0x08,0x88,0x70,0x00,0x00,0x30,0x28,0x24,0x22,0x21,0x30,0x00,//218
+ 210              0x00,0x30,0x08,0x88,0x88,0x48,0x30,0x00,0x00,0x18,0x20,0x20,0x20,0x11,0x0E,0x00,//319
+ 211              0x00,0x00,0xC0,0x20,0x10,0xF8,0x00,0x00,0x00,0x07,0x04,0x24,0x24,0x3F,0x24,0x00,//420
+ 212              0x00,0xF8,0x08,0x88,0x88,0x08,0x08,0x00,0x00,0x19,0x21,0x20,0x20,0x11,0x0E,0x00,//521
+ 213              0x00,0xE0,0x10,0x88,0x88,0x18,0x00,0x00,0x00,0x0F,0x11,0x20,0x20,0x11,0x0E,0x00,//622
+ 214              0x00,0x38,0x08,0x08,0xC8,0x38,0x08,0x00,0x00,0x00,0x00,0x3F,0x00,0x00,0x00,0x00,//723
+ 215              0x00,0x70,0x88,0x08,0x08,0x88,0x70,0x00,0x00,0x1C,0x22,0x21,0x21,0x22,0x1C,0x00,//824
+ 216              0x00,0xE0,0x10,0x08,0x08,0x10,0xE0,0x00,0x00,0x00,0x31,0x22,0x22,0x11,0x0F,0x00,//925
+ 217              0x00,0x00,0x00,0xC0,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x30,0x30,0x00,0x00,0x00,//:26
+ 218              0x00,0x00,0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x80,0x60,0x00,0x00,0x00,0x00,//;27
+ 219              0x00,0x00,0x80,0x40,0x20,0x10,0x08,0x00,0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x00,//<28
+ 220              0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x00,0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x00,//=29
+ 221              0x00,0x08,0x10,0x20,0x40,0x80,0x00,0x00,0x00,0x20,0x10,0x08,0x04,0x02,0x01,0x00,//>30
+ 222              0x00,0x70,0x48,0x08,0x08,0x08,0xF0,0x00,0x00,0x00,0x00,0x30,0x36,0x01,0x00,0x00,//?31   
+ 223          };
+ 224          
+ 225          /*----------------------------------------------------------------------------*
+ 226           * 内部函数原型                                                               *
+ 227           *----------------------------------------------------------------------------*/
+ 228          VOID LED_WrDat(UCHAR8 ucData);
+ 229          VOID LED_WrCmd(UCHAR8 ucCmd);
+ 230          VOID LED_SetPos(UCHAR8 ucIdxX, UCHAR8 ucIdxY);
+ 231          VOID SetStartColumn(UCHAR8 ucData);
+ 232          VOID SetAddressingMode(UCHAR8 ucData);
+ 233          VOID SetColumnAddress(UCHAR8 a, UCHAR8 b);
+ 234          VOID SetPageAddress(UCHAR8 a, UCHAR8 b);
+ 235          VOID SetStartLine(UCHAR8 d);
+ 236          VOID SetContrastControl(UCHAR8 d);
+ 237          VOID SetChargePump(UCHAR8 d);
+ 238          VOID SetSegmentRemap(UCHAR8 d);
+ 239          VOID SetEntireDisplay(UCHAR8 d);
+ 240          VOID SetInverseDisplay(UCHAR8 d);
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 5   
+
+ 241          VOID SetMultiplexRatio(UCHAR8 d);
+ 242          VOID SetDisplayOnOff(UCHAR8 d);
+ 243          VOID SetStartPage(UCHAR8 d);
+ 244          VOID SetCommonRemap(UCHAR8 d);
+ 245          VOID SetDisplayOffset(UCHAR8 d);
+ 246          VOID SetDisplayClock(UCHAR8 d);
+ 247          VOID SetPrechargePeriod(UCHAR8 d);
+ 248          VOID SetCommonConfig(UCHAR8 d);
+ 249          VOID SetVCOMH(UCHAR8 d);
+ 250          VOID SetNop(VOID);
+ 251          
+ 252          /*----------------------------------------------------------------------------*
+ 253           * 外部函数原型                                                               *
+ 254           *----------------------------------------------------------------------------*/
+ 255          
+ 256          /*****************************************************************************
+ 257           函 数 名  : LED_WrDat
+ 258           功能描述  : 向OLED写数据
+ 259           输入参数  : UCHAR8 ucData  
+ 260           输出参数  : NONE
+ 261           返 回 值  : NONE
+ 262          *****************************************************************************/
+ 263          VOID LED_WrDat(UCHAR8 ucData)
+ 264          {
+ 265   1          UCHAR8 i = 8;
+ 266   1          LED_DC   = 1;
+ 267   1          LED_SCL  = 0;
+ 268   1          
+ 269   1          while (i--)
+ 270   1          {
+ 271   2              if (ucData & 0x80)
+ 272   2              {
+ 273   3                  LED_SDA = 1;
+ 274   3              }
+ 275   2              else
+ 276   2              {
+ 277   3                  LED_SDA = 0;
+ 278   3              }
+ 279   2              
+ 280   2              LED_SCL = 1; 
+ 281   2              _nop_();
+ 282   2              LED_SCL = 0;    
+ 283   2              ucData <<= 1;    
+ 284   2          }
+ 285   1      
+ 286   1          return;
+ 287   1      }
+ 288          
+ 289          /*****************************************************************************
+ 290           函 数 名  : LED_WrCmd
+ 291           功能描述  : 向OLED写命令
+ 292           输入参数  : UCHAR8 ucCmd  
+ 293           输出参数  : NONE
+ 294           返 回 值  : NONE
+ 295          *****************************************************************************/
+ 296          VOID LED_WrCmd(UCHAR8 ucCmd)
+ 297          {
+ 298   1          UCHAR8 i = 8;
+ 299   1          LED_DC   = 0;
+ 300   1          LED_SCL  = 0;
+ 301   1          while (i--)
+ 302   1          {
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 6   
+
+ 303   2              if (ucCmd & 0x80)
+ 304   2              {
+ 305   3                  LED_SDA = 1;
+ 306   3              }
+ 307   2              else
+ 308   2              {
+ 309   3                  LED_SDA = 0;
+ 310   3              }
+ 311   2              LED_SCL = 1;
+ 312   2              _nop_();           
+ 313   2              LED_SCL = 0;    
+ 314   2              ucCmd <<= 1;   
+ 315   2          }  
+ 316   1      
+ 317   1          return;
+ 318   1      }
+ 319          
+ 320          
+ 321          /*****************************************************************************
+ 322           函 数 名  : LED_SetPos
+ 323           功能描述  : 设置坐标
+ 324           输入参数  : UCHAR8 ucIdxX  
+ 325                       UCHAR8 ucIdxY  
+ 326           输出参数  : NONE
+ 327           返 回 值  : NONE
+ 328          *****************************************************************************/
+ 329          VOID LED_SetPos(UCHAR8 ucIdxX, UCHAR8 ucIdxY)
+ 330          { 
+ 331   1          LED_WrCmd(0xb0 + ucIdxY);
+ 332   1          LED_WrCmd(((ucIdxX & 0xf0) >> 4) | 0x10);
+ 333   1          LED_WrCmd((ucIdxX & 0x0f) | 0x00); 
+ 334   1      } 
+ 335          
+ 336          /*****************************************************************************
+ 337           函 数 名  : LED_Fill
+ 338           功能描述  : 对全屏写入同一个字符函数 
+ 339                       如 LED_Fill(0x01);    对于某一位0为不亮 1为亮
+ 340                      ------------------------------------------------------
+ 341                                          共128列
+ 342                            1           1                1
+ 343                        共  0           0                0
+ 344                        8   0           0                0
+ 345                        组  0       ……0     …………   0
+ 346                        字  0           0                0
+ 347                        符  0           0                0
+ 348                        即  0           0                0
+ 349                        8   0           0                0
+ 350                        页  1           1                1
+ 351                        64  0           0                0
+ 352                        行  .           .                .
+ 353                            .           .    …………    .
+ 354                            .           .                . 
+ 355                            .           .                .
+ 356                            0           0                0
+ 357                      ------------------------------------------------------
+ 358           输入参数  : UCHAR8 ucData  
+ 359           输出参数  : NONE
+ 360           返 回 值  : NONE
+ 361          *****************************************************************************/
+ 362          VOID LED_Fill(UCHAR8 ucData)
+ 363          {
+ 364   1          UCHAR8 ucPage,ucColumn;
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 7   
+
+ 365   1          
+ 366   1          for(ucPage = 0; ucPage < 8; ucPage++)
+ 367   1          {
+ 368   2              LED_WrCmd(0xb0 + ucPage);  //0xb0+0~7表示页0~7
+ 369   2              LED_WrCmd(0x00);           //0x00+0~16表示将128列分成16组其地址在某组中的第几列
+ 370   2              LED_WrCmd(0x10);           //0x10+0~16表示将128列分成16组其地址所在第几组
+ 371   2              for(ucColumn = 0; ucColumn < 128; ucColumn++)
+ 372   2              {
+ 373   3                  LED_WrDat(ucData);
+ 374   3              }
+ 375   2          }
+ 376   1      } 
+ 377          
+ 378          VOID SetStartColumn(UCHAR8 ucData)
+ 379          {
+ 380   1          LED_WrCmd(0x00+ucData % 16);   // Set Lower Column Start Address for Page Addressing Mode
+ 381   1                                         // Default => 0x00
+ 382   1          LED_WrCmd(0x10+ucData / 16);   // Set Higher Column Start Address for Page Addressing Mode
+ 383   1                                         // Default => 0x10
+ 384   1      }
+ 385          
+ 386          VOID SetAddressingMode(UCHAR8 ucData)
+ 387          {
+ 388   1          LED_WrCmd(0x20);        // Set Memory Addressing Mode
+ 389   1          LED_WrCmd(ucData);      // Default => 0x02
+ 390   1                                  // 0x00 => Horizontal Addressing Mode
+ 391   1                                  // 0x01 => Vertical Addressing Mode
+ 392   1                                  // 0x02 => Page Addressing Mode
+ 393   1      }
+ 394          
+ 395          VOID SetColumnAddress(UCHAR8 a, UCHAR8 b)
+ 396          {
+ 397   1          LED_WrCmd(0x21);        // Set Column Address
+ 398   1          LED_WrCmd(a);           // Default => 0x00 (Column Start Address)
+ 399   1          LED_WrCmd(b);           // Default => 0x7F (Column End Address)
+ 400   1      }
+ 401          
+ 402          VOID SetPageAddress(UCHAR8 a, UCHAR8 b)
+ 403          {
+ 404   1          LED_WrCmd(0x22);        // Set Page Address
+ 405   1          LED_WrCmd(a);           // Default => 0x00 (Page Start Address)
+ 406   1          LED_WrCmd(b);           // Default => 0x07 (Page End Address)
+ 407   1      }
+ 408          
+ 409          VOID SetStartLine(UCHAR8 ucData)
+ 410          {
+ 411   1          LED_WrCmd(0x40|ucData); // Set Display Start Line
+ 412   1                                  // Default => 0x40 (0x00)
+ 413   1      }
+ 414          
+ 415          VOID SetContrastControl(UCHAR8 ucData)
+ 416          {
+ 417   1          LED_WrCmd(0x81);        // Set Contrast Control
+ 418   1          LED_WrCmd(ucData);      // Default => 0x7F
+ 419   1      }
+ 420          
+ 421          VOID SetChargePump(UCHAR8 ucData)
+ 422          {
+ 423   1          LED_WrCmd(0x8D);        // Set Charge Pump
+ 424   1          LED_WrCmd(0x10|ucData); // Default => 0x10
+ 425   1                                  // 0x10 (0x00) => Disable Charge Pump
+ 426   1                                  // 0x14 (0x04) => Enable Charge Pump
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 8   
+
+ 427   1      }
+ 428          
+ 429          VOID SetSegmentRemap(UCHAR8 ucData)
+ 430          {
+ 431   1          LED_WrCmd(0xA0|ucData); // Set Segment Re-Map
+ 432   1                                  // Default => 0xA0
+ 433   1                                  // 0xA0 (0x00) => Column Address 0 Mapped to SEG0
+ 434   1                                  // 0xA1 (0x01) => Column Address 0 Mapped to SEG127
+ 435   1      }
+ 436          
+ 437          VOID SetEntireDisplay(UCHAR8 ucData)
+ 438          {
+ 439   1          LED_WrCmd(0xA4|ucData); // Set Entire Display On / Off
+ 440   1                                  // Default => 0xA4
+ 441   1                                  // 0xA4 (0x00) => Normal Display
+ 442   1                                  // 0xA5 (0x01) => Entire Display On
+ 443   1      }
+ 444          
+ 445          VOID SetInverseDisplay(UCHAR8 ucData)
+ 446          {
+ 447   1          LED_WrCmd(0xA6|ucData); // Set Inverse Display On/Off
+ 448   1                                  // Default => 0xA6
+ 449   1                                  // 0xA6 (0x00) => Normal Display
+ 450   1                                  // 0xA7 (0x01) => Inverse Display On
+ 451   1      }
+ 452          
+ 453          VOID SetMultiplexRatio(UCHAR8 ucData)
+ 454          {
+ 455   1          LED_WrCmd(0xA8);        // Set Multiplex Ratio
+ 456   1          LED_WrCmd(ucData);      // Default => 0x3F (1/64 Duty)
+ 457   1      }
+ 458          
+ 459          VOID SetDisplayOnOff(UCHAR8 ucData)
+ 460          {
+ 461   1          LED_WrCmd(0xAE|ucData); // Set Display On/Off
+ 462   1                                  // Default => 0xAE
+ 463   1                                  // 0xAE (0x00) => Display Off
+ 464   1                                  // 0xAF (0x01) => Display On
+ 465   1      }
+ 466          
+ 467          VOID SetStartPage(UCHAR8 ucData)
+ 468          {
+ 469   1          LED_WrCmd(0xB0|ucData); // Set Page Start Address for Page Addressing Mode
+ 470   1                                  // Default => 0xB0 (0x00)
+ 471   1      }
+ 472          
+ 473          VOID SetCommonRemap(UCHAR8 ucData)
+ 474          {
+ 475   1          LED_WrCmd(0xC0|ucData); // Set COM Output Scan Direction
+ 476   1                                  // Default => 0xC0
+ 477   1                                  // 0xC0 (0x00) => Scan from COM0 to 63
+ 478   1                                  // 0xC8 (0x08) => Scan from COM63 to 0
+ 479   1      }
+ 480          
+ 481          VOID SetDisplayOffset(UCHAR8 ucData)
+ 482          {
+ 483   1          LED_WrCmd(0xD3);        // Set Display Offset
+ 484   1          LED_WrCmd(ucData);      // Default => 0x00
+ 485   1      }
+ 486          
+ 487          VOID SetDisplayClock(UCHAR8 ucData)
+ 488          {
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 9   
+
+ 489   1          LED_WrCmd(0xD5);        // Set Display Clock Divide Ratio / Oscillator Frequency
+ 490   1          LED_WrCmd(ucData);      // Default => 0x80
+ 491   1                                  // D[3:0] => Display Clock Divider
+ 492   1                                  // D[7:4] => Oscillator Frequency
+ 493   1      }
+ 494          
+ 495          VOID SetPrechargePeriod(UCHAR8 ucData)
+ 496          {
+ 497   1          LED_WrCmd(0xD9);        // Set Pre-Charge Period
+ 498   1          LED_WrCmd(ucData);      // Default => 0x22 (2 Display Clocks [Phase 2] / 2 Display Clocks [Phase 1])
+ 499   1                                  // D[3:0] => Phase 1 Period in 1~15 Display Clocks
+ 500   1                                  // D[7:4] => Phase 2 Period in 1~15 Display Clocks
+ 501   1      }
+ 502          
+ 503          VOID SetCommonConfig(UCHAR8 ucData)
+ 504          {
+ 505   1          LED_WrCmd(0xDA);        // Set COM Pins Hardware Configuration
+ 506   1          LED_WrCmd(0x02|ucData); // Default => 0x12 (0x10)
+ 507   1                                  // Alternative COM Pin Configuration
+ 508   1                                  // Disable COM Left/Right Re-Map
+ 509   1      }
+ 510          
+ 511          VOID SetVCOMH(UCHAR8 ucData)
+ 512          {
+ 513   1          LED_WrCmd(0xDB);        // Set VCOMH Deselect Level
+ 514   1          LED_WrCmd(ucData);      // Default => 0x20 (0.77*VCC)
+ 515   1      }
+ 516          
+ 517          VOID SetNop(VOID)
+ 518          {
+ 519   1          LED_WrCmd(0xE3);        // Command for No Operation
+ 520   1      }
+ 521          
+ 522          /*****************************************************************************
+ 523           函 数 名  : LED_Init
+ 524           功能描述  : OLED初始化
+ 525           输入参数  : VOID  
+ 526           输出参数  : NONE
+ 527           返 回 值  : NONE
+ 528          *****************************************************************************/
+ 529          VOID LED_Init(VOID)        
+ 530          {
+ 531   1          UCHAR8 i;
+ 532   1      
+ 533   1          LED_SCL = 1;      
+ 534   1          LED_RST = 0;
+ 535   1          
+ 536   1          for(i = 0; i < 100; i++)
+ 537   1          {
+ 538   2              _nop_();            //从上电到下面开始初始化要有足够的时间，即等待RC复位完毕      
+ 539   2          }
+ 540   1          
+ 541   1          LED_RST = 1;
+ 542   1      
+ 543   1          SetDisplayOnOff(0x00);     // Display Off (0x00/0x01)
+ 544   1          SetDisplayClock(0x80);     // Set Clock as 100 Frames/Sec
+ 545   1          SetMultiplexRatio(0x3F);   // 1/64 Duty (0x0F~0x3F)
+ 546   1          SetDisplayOffset(0x00);    // Shift Mapping RAM Counter (0x00~0x3F)
+ 547   1          SetStartLine(0x00);        // Set Mapping RAM Display Start Line (0x00~0x3F)
+ 548   1          SetChargePump(0x04);       // Enable Embedded DC/DC Converter (0x00/0x04)
+ 549   1          SetAddressingMode(0x02);   // Set Page Addressing Mode (0x00/0x01/0x02)
+ 550   1          SetSegmentRemap(0x01);     // Set SEG/Column Mapping     0x00左右反置 0x01正常
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 10  
+
+ 551   1          SetCommonRemap(0x08);      // Set COM/Row Scan Direction 0x00上下反置 0x08正常
+ 552   1          SetCommonConfig(0x10);     // Set Sequential Configuration (0x00/0x10)
+ 553   1          SetContrastControl(0xCF);  // Set SEG Output Current
+ 554   1          SetPrechargePeriod(0xF1);  // Set Pre-Charge as 15 Clocks & Discharge as 1 Clock
+ 555   1          SetVCOMH(0x40);            // Set VCOM Deselect Level
+ 556   1          SetEntireDisplay(0x00);    // Disable Entire Display On (0x00/0x01)
+ 557   1          SetInverseDisplay(0x00);   // Disable Inverse Display On (0x00/0x01)  
+ 558   1          SetDisplayOnOff(0x01);     // Display On (0x00/0x01)
+ 559   1          LED_Fill(0x00);            // 初始清屏
+ 560   1          LED_SetPos(0,0);
+ 561   1      
+ 562   1          return;
+ 563   1      } 
+ 564           
+ 565          /*****************************************************************************
+ 566           函 数 名  : LED_P6x8Char
+ 567           功能描述  : 显示一个6x8标准ASCII字符
+ 568           输入参数  : UCHAR8 ucIdxX  显示的横坐标0~122
+ 569                       UCHAR8 ucIdxY  页范围0～7
+ 570                       UCHAR8 ucData  显示的字符
+ 571           输出参数  : NONE
+ 572           返 回 值  : NONE
+ 573          *****************************************************************************/
+ 574          VOID LED_P6x8Char(UCHAR8 ucIdxX, UCHAR8 ucIdxY, UCHAR8 ucData)
+ 575          {
+ 576   1          UCHAR8 i, ucDataTmp;     
+ 577   1             
+ 578   1          ucDataTmp = ucData-32;
+ 579   1          if(ucIdxX > 122)
+ 580   1          {
+ 581   2              ucIdxX = 0;
+ 582   2              ucIdxY++;
+ 583   2          }
+ 584   1          
+ 585   1          LED_SetPos(ucIdxX, ucIdxY);
+ 586   1          
+ 587   1          for(i = 0; i < 6; i++)
+ 588   1          {     
+ 589   2              LED_WrDat(F6x8[ucDataTmp][i]);  
+ 590   2          }
+ 591   1      }
+ 592          
+ 593          /*****************************************************************************
+ 594           函 数 名  : LED_P6x8Str
+ 595           功能描述  : 写入一组6x8标准ASCII字符串
+ 596           输入参数  : UCHAR8 ucIdxX       显示的横坐标0~122
+ 597                       UCHAR8 ucIdxY       页范围0～7
+ 598                       UCHAR8 ucDataStr[]  显示的字符串
+ 599           输出参数  : NONE
+ 600           返 回 值  : NONE
+ 601          *****************************************************************************/
+ 602          VOID LED_P6x8Str(UCHAR8 ucIdxX, UCHAR8 ucIdxY, UCHAR8 ucDataStr[])
+ 603          {
+ 604   1          UCHAR8 i, j, ucDataTmp; 
+ 605   1      
+ 606   1          for (j = 0; ucDataStr[j] != '\0'; j++)
+ 607   1          {    
+ 608   2              ucDataTmp = ucDataStr[j] - 32;
+ 609   2              if(ucIdxX > 122)
+ 610   2              {
+ 611   3                  ucIdxX = 0;
+ 612   3                  ucIdxY++;
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 11  
+
+ 613   3              }
+ 614   2              
+ 615   2              LED_SetPos(ucIdxX,ucIdxY); 
+ 616   2              
+ 617   2              for(i = 0; i < 6; i++)
+ 618   2              {     
+ 619   3                  LED_WrDat(F6x8[ucDataTmp][i]);  
+ 620   3              }
+ 621   2              ucIdxX += 6;
+ 622   2          }
+ 623   1      
+ 624   1          return;
+ 625   1      }
+ 626          void display_num(unsigned char x,unsigned char y,int num)
+ 627          {
+ 628   1              unsigned char i;
+ 629   1              LED_SetPos(x, y);           
+ 630   1              for(i = 0; i < 8; i++) 
+ 631   1              {
+ 632   2                  LED_WrDat(F8X16[((num+16 )<< 4) + i]);
+ 633   2              }        
+ 634   1               LED_SetPos(x, y+1);           
+ 635   1              for(i = 0; i < 8; i++) 
+ 636   1              {
+ 637   2                  LED_WrDat(F8X16[((num+16 )<< 4) + i+8]);
+ 638   2              }
+ 639   1      }
+ 640          /*****************************************************************************
+ 641           函 数 名  : LED_P8x16Str
+ 642           功能描述  : 写入一组8x16标准ASCII字符串
+ 643           输入参数  : UCHAR8 ucIdxX       为显示的横坐标0~120
+ 644                       UCHAR8 ucIdxY       为页范围0～3
+ 645                       UCHAR8 ucDataStr[]  要显示的字符串
+ 646           输出参数  : NONE
+ 647           返 回 值  : NONE
+ 648          *****************************************************************************/
+ 649          VOID LED_P8x16Str(UCHAR8 ucIdxX, UCHAR8 ucIdxY, UCHAR8 ucDataStr[])
+ 650          {
+ 651   1          UCHAR8 i, j, ucDataTmp;
+ 652   1      
+ 653   1          ucIdxY <<= 1;
+ 654   1          
+ 655   1          for (j = 0; ucDataStr[j] != '\0'; j++)
+ 656   1          {    
+ 657   2              ucDataTmp = ucDataStr[j] - 32;
+ 658   2              if(ucIdxX > 120)
+ 659   2              {
+ 660   3                  ucIdxX = 0;
+ 661   3                  ucIdxY += 2;
+ 662   3              }
+ 663   2              LED_SetPos(ucIdxX, ucIdxY);   
+ 664   2              
+ 665   2              for(i = 0; i < 8; i++) 
+ 666   2              {
+ 667   3                  LED_WrDat(F8X16[(ucDataTmp << 4) + i]);
+ 668   3              }
+ 669   2              
+ 670   2              LED_SetPos(ucIdxX, ucIdxY + 1);   
+ 671   2              
+ 672   2              for(i = 0; i < 8; i++) 
+ 673   2              {
+ 674   3                  LED_WrDat(F8X16[(ucDataTmp << 4) + i + 8]);
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 12  
+
+ 675   3              }
+ 676   2              ucIdxX += 8;
+ 677   2              
+ 678   2          }
+ 679   1      
+ 680   1          return;
+ 681   1      }
+ 682          
+ 683          /*****************************************************************************
+ 684           函 数 名  : LED_P14x16Str
+ 685           功能描述  : 写入一组14x16的中文字符串（字符串表格中需含有此字）
+ 686           输入参数  : UCHAR8 ucIdxX       为显示的横坐标0~114
+ 687                       UCHAR8 ucIdxY       为页范围0～3
+ 688                       UCHAR8 ucDataStr[]  要显示的中文字符串
+ 689           输出参数  : NONE
+ 690           返 回 值  : NONE
+ 691          *****************************************************************************/
+ 692          VOID LED_P14x16Str(UCHAR8 ucIdxX,UCHAR8 ucIdxY,UCHAR8 ucDataStr[])
+ 693          {
+ 694   1          UCHAR8 i, j;
+ 695   1          USHORT16 usAddress; 
+ 696   1          
+ 697   1          ucIdxY <<= 1;
+ 698   1          
+ 699   1          j = 0;
+ 700   1          while(ucDataStr[j] != '\0')
+ 701   1          {
+ 702   2              i = 0;
+ 703   2              usAddress = 1;
+ 704   2              while(F14x16_Idx[i] > 127)
+ 705   2              {
+ 706   3                  if(F14x16_Idx[i] == ucDataStr[j])
+ 707   3                  {
+ 708   4                      if(F14x16_Idx[i + 1] == ucDataStr[j + 1])
+ 709   4                      {
+ 710   5                          usAddress = i * 14;
+ 711   5                          break;
+ 712   5                      }
+ 713   4                  }
+ 714   3                  i += 2;            
+ 715   3              }
+ 716   2              
+ 717   2              if(ucIdxX > 114)
+ 718   2              {
+ 719   3                  ucIdxX = 0;
+ 720   3                  ucIdxY += 2;
+ 721   3              }
+ 722   2              
+ 723   2              if(usAddress != 1)// 显示汉字                   
+ 724   2              {
+ 725   3                  LED_SetPos(ucIdxX, ucIdxY);
+ 726   3                  for(i = 0; i < 14; i++)               
+ 727   3                  {
+ 728   4                      LED_WrDat(F14x16[usAddress]);   
+ 729   4                      usAddress++;
+ 730   4                  }
+ 731   3                  
+ 732   3                  LED_SetPos(ucIdxX,ucIdxY + 1); 
+ 733   3                  for(i = 0;i < 14;i++)          
+ 734   3                  {
+ 735   4                      LED_WrDat(F14x16[usAddress]);
+ 736   4                      usAddress++;
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 13  
+
+ 737   4                  }
+ 738   3                  
+ 739   3                  j += 2;        
+ 740   3              }
+ 741   2              else              //显示空白字符            
+ 742   2              {
+ 743   3                  LED_SetPos(ucIdxX,ucIdxY);
+ 744   3                  for(i = 0;i < 14;i++)
+ 745   3                  {
+ 746   4                      LED_WrDat(0);
+ 747   4                  }
+ 748   3                  
+ 749   3                  LED_SetPos(ucIdxX,ucIdxY + 1);
+ 750   3                  for(i = 0;i < 14;i++)
+ 751   3                  {           
+ 752   4                      LED_WrDat(0);   
+ 753   4                  }
+ 754   3                  
+ 755   3                  j++;
+ 756   3              }
+ 757   2              
+ 758   2              ucIdxX += 14;
+ 759   2          }
+ 760   1      
+ 761   1          return;
+ 762   1      }
+ 763          
+ 764          /*****************************************************************************
+ 765           函 数 名  : LED_PXx16MixStr
+ 766           功能描述  : 输出14x16汉字和字符混合字符串 （字符串表格中需含有此字）
+ 767           输入参数  : UCHAR8 ucIdxX       为显示的横坐标0~114
+ 768                       UCHAR8 ucIdxY       为页范围0～3
+ 769                       UCHAR8 ucDataStr[]  要显示的中文字符串
+ 770           输出参数  : NONE
+ 771           返 回 值  : NONE
+ 772          *****************************************************************************/
+ 773          VOID LED_PXx16MixStr(UCHAR8 ucIdxX, UCHAR8 ucIdxY, UCHAR8 ucDataStr[])
+ 774          {
+ 775   1          UCHAR8 ucTmpStr[3];
+ 776   1          UCHAR8 i = 0;    
+ 777   1          
+ 778   1          while(ucDataStr[i] != '\0')
+ 779   1          {
+ 780   2              if(ucDataStr[i] > 127)
+ 781   2              {
+ 782   3                  ucTmpStr[0] = ucDataStr[i];
+ 783   3                  ucTmpStr[1] = ucDataStr[i + 1];
+ 784   3                  ucTmpStr[2] = '\0';          //汉字为两个字节
+ 785   3                  LED_P14x16Str(ucIdxX, ucIdxY, ucTmpStr);  //显示汉字
+ 786   3                  ucIdxX += 14;
+ 787   3                  i += 2;
+ 788   3              }
+ 789   2              else
+ 790   2              {
+ 791   3                  ucTmpStr[0] = ucDataStr[i];    
+ 792   3                  ucTmpStr[1] = '\0';          //字母占一个字节
+ 793   3                  LED_P8x16Str(ucIdxX, ucIdxY, ucTmpStr);  //显示字母
+ 794   3                  ucIdxX += 8;
+ 795   3                  i += 1;
+ 796   3              }
+ 797   2          }
+ 798   1      
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 14  
+
+ 799   1          return;
+ 800   1      } 
+ 801          
+ 802          /*****************************************************************************
+ 803           函 数 名  : LED_PrintChar
+ 804           功能描述  : 将一个Char型数转换成3位数进行显示
+ 805           输入参数  : UCHAR8 ucIdxX    ucIdxX的范围为0～122
+ 806                       UCHAR8 ucIdxY    ucIdxY的范围为0～7
+ 807                       CHAR8 cData      cData为需要转化显示的数值 -128~127
+ 808           输出参数  : none
+ 809           返 回 值  : none
+ 810          *****************************************************************************/
+ 811          VOID LED_PrintChar(UCHAR8 ucIdxX, UCHAR8 ucIdxY, CHAR8 cData)
+ 812          {
+ 813   1          USHORT16 i, j, k, usData;
+ 814   1      
+ 815   1          if(cData < 0)
+ 816   1          {
+ 817   2              LED_P6x8Char(ucIdxX, ucIdxY, '-');
+ 818   2              usData = (USHORT16)(-cData);  
+ 819   2          }
+ 820   1          else
+ 821   1          {
+ 822   2              LED_P6x8Char(ucIdxX, ucIdxY, '+');
+ 823   2              usData = (USHORT16)cData;
+ 824   2          }
+ 825   1          i = usData / 100;
+ 826   1          j = (usData % 100) / 10;
+ 827   1          k = usData % 10;
+ 828   1          
+ 829   1          LED_P6x8Char(ucIdxX+6, ucIdxY, i+48);
+ 830   1          LED_P6x8Char(ucIdxX+12, ucIdxY, j+48);
+ 831   1          LED_P6x8Char(ucIdxX+18, ucIdxY, k+48);   
+ 832   1      
+ 833   1          return;
+ 834   1      }
+ 835          
+ 836          /*****************************************************************************
+ 837           函 数 名  : LED_PrintShort
+ 838           功能描述  : 将一个Short型数转换成5位数进行显示
+ 839           输入参数  : UCHAR8 ucIdxX ucIdxX的范围为0～120
+ 840                       UCHAR8 ucIdxY ucIdxY为页的范围0～7
+ 841                       SHORT16 sData  sData为需要转化显示的数值
+ 842           输出参数  : none
+ 843           返 回 值  : none
+ 844          *****************************************************************************/
+ 845          VOID LED_PrintShort(UCHAR8 ucIdxX, UCHAR8 ucIdxY, SHORT16 sData)
+ 846          {
+ 847   1          USHORT16 i, j, k, l, m, usData;  
+ 848   1          if(sData < 0)
+ 849   1          {
+ 850   2              LED_P6x8Char(ucIdxX,ucIdxY,'-');
+ 851   2              usData = (USHORT16)(-sData);  
+ 852   2          }
+ 853   1          else
+ 854   1          {
+ 855   2              LED_P6x8Char(ucIdxX,ucIdxY,'+');
+ 856   2              usData = (USHORT16)sData;
+ 857   2          }
+ 858   1          
+ 859   1          l = usData / 10000;
+ 860   1          m = (usData % 10000) /1000;
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 15  
+
+ 861   1          i = (usData % 1000) / 100;
+ 862   1          j = (usData % 100) / 10;
+ 863   1          k = usData % 10;
+ 864   1          LED_P6x8Char(ucIdxX+6, ucIdxY, l+48);
+ 865   1          LED_P6x8Char(ucIdxX+12, ucIdxY, m+48);
+ 866   1          LED_P6x8Char(ucIdxX+18, ucIdxY, i+48);
+ 867   1          LED_P6x8Char(ucIdxX+24, ucIdxY, j+48);
+ 868   1          LED_P6x8Char(ucIdxX+30, ucIdxY, k+48);  
+ 869   1      
+ 870   1          return;
+ 871   1      }
+ 872          
+ 873          /*****************************************************************************
+ 874           函 数 名  : LED_PrintImage
+ 875           功能描述  : 将图像显示出来
+ 876           输入参数  : UCHAR8 *pucTable     二维图像数组的地址
+ 877                       USHORT16 usRowNum    二维图像的行数1~64
+ 878                       USHORT16 usColumnNum 二维图像的列数1~128
+ 879           输出参数  : none
+ 880           返 回 值  : none
+ 881          *****************************************************************************/
+ 882          VOID LED_PrintImage(UCHAR8 *pucTable, USHORT16 usRowNum, USHORT16 usColumnNum)
+ 883          {
+ 884   1          UCHAR8 ucData;
+ 885   1          USHORT16 i,j,k,m,n;
+ 886   1          USHORT16 usRowTmp;
+ 887   1      
+ 888   1          m = usRowNum >> 3;   //计算图片行数以8位为一组完整的组数
+ 889   1          n = usRowNum % 8;    //计算分完组后剩下的行数
+ 890   1          
+ 891   1          for(i = 0; i < m; i++) //完整组行扫描
+ 892   1          {
+ 893   2              LED_SetPos(0,(UCHAR8)i);
+ 894   2              usRowTmp = i << 3;    //计算当前所在行的下标                  
+ 895   2              for(j = 0; j < usColumnNum; j++) //列扫描        
+ 896   2              {
+ 897   3                  ucData = 0;
+ 898   3                  for(k = 0; k < 8; k++) //在i组中对这8行扫描
+ 899   3                  {
+ 900   4                      ucData = ucData >> 1;
+ 901   4                      if((pucTable + (usRowTmp + k) * usColumnNum)[j] == LED_IMAGE_WHITE)
+ 902   4                      {
+ 903   5                          ucData = ucData | 0x80;
+ 904   5                      }
+ 905   4                      
+ 906   4                  }
+ 907   3                  LED_WrDat(ucData);
+ 908   3              }
+ 909   2          }
+ 910   1          
+ 911   1          LED_SetPos(0,(UCHAR8)i); //设置剩下的行显示的起始坐标
+ 912   1          usRowTmp = i << 3;       //计算当前所在行的下标                  
+ 913   1          for(j = 0; j < usColumnNum; j++) //列扫描        
+ 914   1          {
+ 915   2              ucData = 0;
+ 916   2              for(k = 0; k < n; k++) //对剩下的行扫描
+ 917   2              {
+ 918   3                  ucData = ucData >> 1;
+ 919   3                  if((pucTable + (usRowTmp + k) * usColumnNum)[j] == LED_IMAGE_WHITE)
+ 920   3                  {
+ 921   4                      ucData = ucData | 0x80;
+ 922   4                  }
+C51 COMPILER V9.52.0.0   OLED                                                              04/05/2017 12:41:54 PAGE 16  
+
+ 923   3                  
+ 924   3              }
+ 925   2              ucData = ucData >> (8 - n);
+ 926   2              LED_WrDat(ucData);
+ 927   2          }
+ 928   1      
+ 929   1          return;
+ 930   1      }
+ 931          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2545    ----
+   CONSTANT SIZE    =   1634    ----
+   XDATA SIZE       =   ----      75
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
