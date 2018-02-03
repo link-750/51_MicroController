@@ -1,0 +1,51 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Project:</h2>
+C:\Users\Administrator\Desktop\标准程序收集\一路舵机控制\一路舵机控制原理.uvproj
+Project File Date:  03/19/2016
+
+<h2>Output:</h2>
+compiling 一路舵机控制原理.c...
+一路舵机控制原理.c - 0 Error(s), 0 Warning(s).
+Build target 'Target 1'
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAY?________________
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?INIT?________________
+Program Size: data=21.0 xdata=0 code=890
+creating hex file from "一路舵机控制原理"...
+"一路舵机控制原理" - 0 Error(s), 2 Warning(s).
+Rebuild target 'Target 1'
+compiling 一路舵机控制原理.c...
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAY?________________
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?INIT?________________
+Program Size: data=21.0 xdata=0 code=890
+creating hex file from "一路舵机控制原理"...
+"一路舵机控制原理" - 0 Error(s), 2 Warning(s).
+compiling 一路舵机控制原理.c...
+一路舵机控制原理.c - 0 Error(s), 0 Warning(s).
+Build target 'Target 1'
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAY?________________
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?INIT?________________
+Program Size: data=21.0 xdata=0 code=890
+creating hex file from "一路舵机控制原理"...
+"一路舵机控制原理" - 0 Error(s), 2 Warning(s).
+Rebuild target 'Target 1'
+compiling 一路舵机控制原理.c...
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAY?________________
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?INIT?________________
+Program Size: data=21.0 xdata=0 code=890
+creating hex file from "一路舵机控制原理"...
+"一路舵机控制原理" - 0 Error(s), 2 Warning(s).

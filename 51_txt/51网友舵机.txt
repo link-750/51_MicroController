@@ -1,0 +1,85 @@
+#include <REG52.H>	
+#include <math.h>    //Keil library  
+#include <stdio.h>   //Keil library	
+#include <INTRINS.H>
+
+    sbit pwm =P1^0 ;
+	unsigned char jd;
+	unsigned int count;
+    unsigned long j;	
+
+//**********************************************************************************************************************************	
+void Time0_Init() //打开定时器和中断         
+      {
+	TMOD &= 0xF0;  //清零T0的控制位
+    TMOD |= 0x01;  //配置T0为模式0             
+	  EA = 1;
+	  ET0 = 1;
+          TH0  = 0xFE;
+          TL0  = 0xFC;     //11.0592
+          TR0=1;                
+      }
+//**********************************************************************************************************************************	
+void Time0_Int() interrupt 1 //利用中断虚拟产生一个20ms PWM波
+      {
+      TH0  = 0xFF;             
+      TL0  = 0xF1;               
+      if(count <= jd)              
+      pwm=1;                  
+      else
+      pwm=0;                 
+      count=(count+1);
+	  if(count >= 485)//485
+	  count = 0;
+      }
+		//**********************************************************************************************************************************
+void angle_4_5(unsigned char angleing)//从右极限往左极限转过的角度= angle * 4.5
+	{
+				jd = angleing;  
+				for(j = 0;j <=50000;j++);
+	} 
+	 
+ main()
+ {
+ Time0_Init();
+ while(1)
+ {
+ angle_4_5(130);//右极限
+ angle_4_5(36);	//左极限
+ }
+ 
+ }
+————————————————————————————————————————————————————————————
+#include <REG52.H>	
+sbit out=P1^0;
+void delay()
+{int i=15000;
+while(i--);}
+void timer0()
+{
+	TMOD=0X01;
+	TH0=0Xbb;
+	TL0=0Xa4;
+	EA=1;
+	ET0=1;
+	TR0=1;
+}
+ void timer1() interrupt 1
+{
+	TH0=0Xbb;
+	TL0=0Xa4;
+	out=1;
+	delay();
+	out=0;
+}
+void main()
+{
+	while(1)
+	{
+  timer0();
+	out=0;
+while(1);}
+}
+
+
+			

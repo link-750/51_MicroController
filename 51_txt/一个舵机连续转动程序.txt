@@ -1,0 +1,56 @@
+#include<reg52.h>
+#define uchar unsigned char
+#define uint unsigned int
+sbit pwm=P3^0;
+uchar num,k;
+uint i;
+void delay(uint z)
+{
+	uint x,y;
+	for(x=z;x>0;x--)
+		for(y=110;y>0;y--);
+}  
+void init()
+{
+	TMOD=0x01;
+	TH0=(65536-459)/256;
+	TL0=(65536-459)%256;
+	EA=1;
+
+	ET0=1;
+	TR0=1;  
+/*	i=5;
+	while(k);
+	delay(1000);
+	i=1;
+	while(k); 
+	delay(1000);*/
+}
+void main()
+{
+
+	while(1)
+	{	i=22;//2ms转动45度
+		init();
+		delay(1000);	
+		i=5; //0.5ms转动45度。
+		init();
+		delay(1000);
+	
+	} 
+}
+
+void time0_int() interrupt 1
+
+{	 
+	TH0=(65536-92)/256;
+	TL0=(65536-92)%256;
+		if(num<=i) 
+			pwm=1;
+		else	
+			pwm=0;
+			num++;//自加1
+		if(num%179==0)
+			num=0;
+
+}

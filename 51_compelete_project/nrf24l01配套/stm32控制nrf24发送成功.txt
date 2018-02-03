@@ -1,0 +1,338 @@
+#define uchar unsigned char
+#define uint unsigned int 
+// SPI(nRF24L01)    指令
+#define Read_REG    0x00  //读寄存器指令
+#define Write_REG   0x20  //写寄存器指令
+#define RD_RX_PLOAD 0x61  //读取接收数据指令
+#define WR_TX_PLOAD 0xA0  //写待发数据指令
+#define FLUSH_TX    0xE1  //冲洗发送 FIFO指令
+#define FLUSH_RX    0xE2  //冲洗接收 FIFO指令
+#define REUSE_TX_PL 0xE3  //定义重复装载数据指令
+#define NOP         0xFF  //没有操作，可用于读取状态寄存器
+
+// SPI(nRF24L01) 寄存器地址
+#define CONFIG      0x00  //配置收发状态，CRC校验模式以及收发状态响应方式
+#define EN_AA       0x01  //自动应答功能设置
+#define EN_RXADDR   0x02  //可用信道设置
+#define SETUP_AW    0x03  //收发地址宽度设置 
+#define SETUP_RETR  0x04  //自动重发功能设置
+#define RF_CH       0x05  //工作频率设置
+#define RF_SETUP    0x06  //发射速率、功耗功能设置
+#define STATUS      0x07  //状态寄存器
+#define OBSERVE_TX  0x08  //发送监测功能
+#define CD          0x09  //地址检测
+#define RX_ADDR_P0  0x0A  //频道0接收数据地址
+#define RX_ADDR_P1  0x0B  //频道1接收数据地址
+#define RX_ADDR_P2  0x0C  //频道2接收数据地址
+#define RX_ADDR_P3  0x0D  //频道3接收数据地址
+#define RX_ADDR_P4  0x0E  //频道4接收数据地址
+#define RX_ADDR_P5  0x0F  //频道5接收数据地址
+#define TX_ADDR     0x10  //发送地址寄存器
+#define RX_PW_P0    0x11  //接收频道0接收数据长度
+#define RX_PW_P1    0x12  //接收频道1接收数据长度
+#define RX_PW_P2    0x13  //接收频道2接收数据长度
+#define RX_PW_P3    0x14  //接收频道3接收数据长度
+#define RX_PW_P4    0x15  //接收频道4接收数据长度
+#define RX_PW_P5    0x16  //接收频道5接收数据长度
+#define FIFO_STATUS 0x17  //FIFO栈入栈出状态寄存器设置
+///////////////////////nrf//////////////
+#define TX_ADR_WIDTH   5  // 5字节宽度的发送/接收地址
+#define TX_PLOAD_WIDTH 4  // 数据通道有效数据宽度
+
+uchar TX_ADDRESS[TX_ADR_WIDTH] = {0x34,0x43,0x10,0x10,0x01};  // 定义一个静态发送地址
+uchar RX_BUF[TX_PLOAD_WIDTH];
+uchar TX_BUF[TX_PLOAD_WIDTH];
+uchar flag;
+#include"stm32f10x.h"
+  void  GPIO_init();//led灯的gpio函数的声明
+  void CE(int);
+  void CSN(int);
+  u8 IRQ();
+  void delayms(int);
+  void SPI_Configuration();
+  void USART_Config();
+  void Rcc_Init();
+  
+//////////////////
+  uchar code[]={82};
+  void Init_I0();
+  uchar Check_ACK(uchar);
+  uchar SPI_Read_Buf(uchar, uchar * pBuf, uchar);
+  void TX_Mode(uchar * BUF)	;
+  void RX_Mode(void);
+  uchar SPI_Write_Buf(uchar, uchar * pBuf, uchar);
+  uchar SPI_Read(uchar);
+  uchar SPI_RW(uchar);
+   uchar SPI_RW_Reg(uchar, uchar);
+///////////////////  
+    void main()//主函数
+     {  
+       Rcc_Init();
+       GPIO_init();
+       USART_Config();
+       SPI_Configuration();
+       Init_I0();
+       
+       while(1)//等待
+       {   
+        /* while(1)
+         {
+           USART_SendData(USART1,0xf8);
+         delayms(100); 
+         }*/
+         
+        
+         while(1)
+         {
+             TX_Mode(code);
+             USART_SendData(USART1,SPI_Read(STATUS));
+             delayms(100);
+             USART_SendData(USART1,SPI_Read(FIFO_STATUS));            
+            delayms(100); 
+          }
+         
+       }
+       
+     }
+    
+    void Rcc_Init()//时钟函数
+    {
+      SystemInit();
+      RCC_APB2PeriphClockCmd( RCC_APB2Periph_AFIO,ENABLE);//外部复用功能时钟
+      RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOA,ENABLE);/*使能a口gpio的rcc时钟*/
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1,ENABLE);//使能时钟
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1,ENABLE);//使能SPI时钟
+    }
+     void Init_I0()
+     {
+       CE(0);
+       CSN(0);
+       GPIO_SetBits(GPIOA, GPIO_Pin_3);//IRQ=1
+       
+     }
+         
+    uchar Check_ACK(uchar clear)	//检查接收设备有无接收到数据包，设定没有收到应答信号是否重发
+{
+	uchar sta;
+         if(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_3)==SET);
+	sta = SPI_RW(NOP);                    // 返回状态寄存器
+	if(((sta<<=4)&0x80)==0x80)//max_rt
+		if(clear)                         // 是否清除TX FIFO，没有清除在复位MAX_RT中断标志后重发
+			SPI_RW(FLUSH_TX);
+	SPI_RW_Reg(Write_REG + STATUS, sta);  // 清除TX_DS或MAX_RT中断标志
+	GPIO_SetBits(GPIOA, GPIO_Pin_3);//IRQ = 1;
+	if(((sta<<=2)&0x80)==0x00)//tx_ds
+		return(0x00);
+	else
+		return(0xff);
+}
+
+    uchar SPI_Read_Buf(uchar reg, uchar * pBuf, uchar bytes)	
+//从reg寄存器读出bytes个字节，通常用来读取接收通道数据或接收/发送地址
+{
+	uchar status, i;
+  	CSN(0);                    // CSN置低，开始传输数据
+  	status = SPI_RW(reg);       // 选择寄存器，同时返回状态字
+  	for(i=0; i<bytes; i++)
+    	{
+          pBuf[i] = SPI_RW(0);    // 逐个字节从nRF24L01读出
+  	}
+          CSN(1);                    // CSN拉高，结束数据传输
+  	return(status);             // 返回状态寄存器
+}
+    void TX_Mode(uchar * BUF)	
+//这个函数设置nRF24L01为发送模式，（CE=1持续至少10us），130us后启动发射，数据发送结束后，发送模块自动转入接收模式等待应答信号。
+{
+	CE(0);
+  	SPI_Write_Buf(Write_REG + TX_ADDR, TX_ADDRESS, TX_ADR_WIDTH);     // 写入发送地址
+  	SPI_Write_Buf(Write_REG + RX_ADDR_P0, TX_ADDRESS, TX_ADR_WIDTH);  // 为了应答接收设备，接收通道0地址和发送地址相同
+  	SPI_Write_Buf(WR_TX_PLOAD, BUF, TX_PLOAD_WIDTH);                  // 写数据包到TX FIFO
+  	SPI_RW_Reg(Write_REG + EN_AA, 0x01);       // 使能接收通道0自动应答
+  	SPI_RW_Reg(Write_REG + EN_RXADDR, 0x01);   // 使能接收通道0
+  	SPI_RW_Reg(Write_REG + SETUP_RETR, 0xfa);  // 自动重发延时等待250us+86us，自动重发10次
+  	SPI_RW_Reg(Write_REG + RF_CH, 0x40); // 选择射频通道0x40
+  	SPI_RW_Reg(Write_REG + RF_SETUP, 0x27);
+        //SPI_RW_Reg(Write_REG + RF_SETUP, 0x27);    // 数据传输率1Mbps，发射功率0dBm，低噪声放大器增益
+  	SPI_RW_Reg(Write_REG + CONFIG, 0x0e);      // CRC使能，16位CRC校验，上电
+	CE(1);
+}
+   void RX_Mode(void)	//这个函数设置nRF24L01为接收模式，等待接收发送设备的数据包
+{
+        CE(0);
+	SPI_RW(FLUSH_RX);
+  	SPI_Write_Buf(Write_REG + RX_ADDR_P0, TX_ADDRESS, TX_ADR_WIDTH);  
+		// 接收设备接收通道0使用和发送设备相同的发送地址
+  	SPI_RW_Reg(Write_REG + EN_AA, 0x01);               // 使能接收通道0自动应答
+  	SPI_RW_Reg(Write_REG + EN_RXADDR, 0x01);           // 使能接收通道0
+  	SPI_RW_Reg(Write_REG + RF_CH, 0x40);                 // 选择射频通道0x40
+  	SPI_RW_Reg(Write_REG + RX_PW_P0, TX_PLOAD_WIDTH);  // 接收通道0选择和发送通道相同有效数据宽度
+  	SPI_RW_Reg(Write_REG + RF_SETUP, 0x27);            // 数据传输率1Mbps，发射功率0dBm，低噪声放大器增益
+  	SPI_RW_Reg(Write_REG + CONFIG, 0x0f);              // CRC使能，16位CRC校验，上电，接收模式
+  	CE(1);                                            // 拉高CE启动接收设备
+}
+   uchar SPI_Write_Buf(uchar reg, uchar * pBuf, uchar bytes)	
+//把pBuf缓存中的数据写入到nRF24L01，通常用来写入发射通道数据或接收/发送地址
+{
+	uchar status, i;
+  	CSN(0);                    // CSN置低，开始传输数据
+  	status = SPI_RW(reg);       // 选择寄存器，同时返回状态字
+  	for(i=0; i<bytes; i++)
+    	{
+          SPI_RW(pBuf[i]);        // 逐个字节写入nRF24L01
+        }
+  	CSN(1);                    // CSN拉高，结束数据传输
+  	return(status);             // 返回状态寄存器
+}
+    uchar SPI_Read(uchar reg)	//从reg寄存器读一字节
+{
+	uchar reg_val;
+  	CSN(0);                    // CSN置低，开始传输数据
+  	SPI_RW(reg);                // 选择寄存器
+  	reg_val = SPI_RW(0);        // 然后从该寄存器读数据
+  	CSN(1);                    // CSN拉高，结束数据传输
+  	return reg_val;            // 返回寄存器数据
+}
+
+    uchar SPI_RW(uchar byte)	//根据SPI协议，写一字节数据到nRF24L01，同时从nRF24L01读出一字节
+{
+     
+      
+      while((SPI_I2S_GetFlagStatus(SPI1,SPI_I2S_FLAG_TXE))==RESET);//////////////本应为reset
+         
+      SPI_I2S_SendData(SPI1,byte);
+      
+      while(SPI_I2S_GetFlagStatus(SPI1,SPI_I2S_FLAG_RXNE)==RESET);//////////////本应为reset     
+      return SPI_I2S_ReceiveData(SPI1);//// 返回读出的一字节
+              	
+}
+    uchar SPI_RW_Reg(uchar reg, uchar value)	//写数据value到reg寄存器
+{
+	uchar status;
+  	CSN(0);                   // CSN置低，开始传输数据
+  	status = SPI_RW(reg);      // 选择寄存器，同时返回状态字
+  	SPI_RW(value);             // 然后写数据到该寄存器
+  	CSN(1);                   // CSN拉高，结束数据传输
+  	return(status);            // 返回状态寄存器
+}
+    
+    void CE(int val)//表示高低电平的变量，涵数体内部的初始化过程说了好几次了不用说了吧?{?
+    {
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
+      GPIO_InitTypeDef GPIO_InitStructure;
+      GPIO_InitStructure.GPIO_Pin=GPIO_Pin_2;
+      GPIO_InitStructure.GPIO_Speed=GPIO_Speed_50MHz;
+      GPIO_InitStructure.GPIO_Mode=GPIO_Mode_Out_PP;
+      GPIO_Init(GPIOA,&GPIO_InitStructure);
+     if(val==1)
+       GPIO_SetBits(GPIOA,GPIO_Pin_2);
+     else
+       GPIO_ResetBits(GPIOA,GPIO_Pin_2);
+     }
+    void CSN(int val)//表示高低电平的变量，涵数体内部的初始化过程说了好几次了不用说了吧?{?
+    {
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
+      GPIO_InitTypeDef GPIO_InitStructure;
+      GPIO_InitStructure.GPIO_Pin=GPIO_Pin_1;
+      GPIO_InitStructure.GPIO_Speed=GPIO_Speed_50MHz;
+      GPIO_InitStructure.GPIO_Mode=GPIO_Mode_Out_PP;
+      GPIO_Init(GPIOA,&GPIO_InitStructure);
+      if(val==1)
+       GPIO_SetBits(GPIOA,GPIO_Pin_1);
+      else
+       GPIO_ResetBits(GPIOA,GPIO_Pin_1);
+     }
+    u8 IRQ()//表示高低电平的变量，涵数体内部的初始化过程说了好几次了不用说了吧?{?
+    {
+      u8 ReadData;
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
+      GPIO_InitTypeDef GPIO_InitStructure;
+      GPIO_InitStructure.GPIO_Pin=GPIO_Pin_3;
+      GPIO_InitStructure.GPIO_Speed=GPIO_Speed_50MHz;
+      GPIO_InitStructure.GPIO_Mode=GPIO_Mode_IN_FLOATING;
+      GPIO_Init(GPIOA,&GPIO_InitStructure);
+      ReadData=GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_3);
+      return  ReadData;
+     }
+    void SPI_Configuration()//spi配置函数
+    {
+      SPI_Cmd(SPI1, DISABLE);
+      SPI_InitTypeDef SPI_InitStructure;
+      SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+      SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+      SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+      SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+      SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
+      SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+      SPI_InitStructure.SPI_BaudRatePrescaler =SPI_BaudRatePrescaler_4;      
+      SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+      SPI_InitStructure.SPI_CRCPolynomial = 7;
+      SPI_Init(SPI1, &SPI_InitStructure);
+      //SPI_NSSInternalSoftwareConfig(SPI1,SPI_NSSInternalSoft_Set);
+      SPI_Cmd(SPI1, ENABLE); //使能SPI外设
+    }
+    void  GPIO_init()//引脚初始化函数
+    {      
+       
+       GPIO_InitTypeDef GPIO_InitStructure;//定义结构体
+       //pa9为ua1的tx端  
+       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//定义引脚速度
+       GPIO_InitStructure.GPIO_Pin=GPIO_Pin_9;//定义引脚
+       GPIO_InitStructure.GPIO_Mode=GPIO_Mode_AF_PP;//定义输出模式
+       GPIO_Init(GPIOA,&GPIO_InitStructure);//初始化
+       //pa10为ua1的rx端
+       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//定义引脚速度
+       GPIO_InitStructure.GPIO_Pin=GPIO_Pin_10;//定义引脚
+       GPIO_InitStructure.GPIO_Mode=GPIO_Mode_IN_FLOATING;//定义输出模式
+       GPIO_Init(GPIOA,&GPIO_InitStructure);//初始化
+       //pa/5/7为spi的复用引脚 分别是SCK，MISO，MOSI
+       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//定义引脚速度
+       GPIO_InitStructure.GPIO_Pin=GPIO_Pin_5|GPIO_Pin_7;//定义引脚
+       GPIO_InitStructure.GPIO_Mode=GPIO_Mode_AF_PP;//定义输出模式
+       GPIO_Init(GPIOA,&GPIO_InitStructure);//初始化
+       //pa6口
+      
+       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//定义引脚速度
+       GPIO_InitStructure.GPIO_Pin=GPIO_Pin_6;//定义引脚
+       GPIO_InitStructure.GPIO_Mode=GPIO_Mode_IN_FLOATING;//定义输出模式
+       GPIO_Init(GPIOA,&GPIO_InitStructure);//初始化
+       /*//pa1的spi CS口
+       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//定义引脚速度
+       GPIO_InitStructure.GPIO_Pin=GPIO_Pin_1;//定义引脚
+       GPIO_InitStructure.GPIO_Mode=GPIO_Mode_Out_PP;//定义输出模式
+       GPIO_Init(GPIOA,&GPIO_InitStructure);//初始化
+       //pa3-IRQ口
+        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//定义引脚速度
+       GPIO_InitStructure.GPIO_Pin=GPIO_Pin_3;//定义引脚
+       GPIO_InitStructure.GPIO_Mode=GPIO_Mode_IN_FLOATING;//定义输出模式
+       GPIO_Init(GPIOA,&GPIO_InitStructure);//初始化
+       //PA2-CE口
+        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//定义引脚速度
+       GPIO_InitStructure.GPIO_Pin=GPIO_Pin_2;//定义引脚
+       GPIO_InitStructure.GPIO_Mode=GPIO_Mode_Out_PP;//定义输出模式
+       GPIO_Init(GPIOA,&GPIO_InitStructure);//初始化*/
+       
+       }
+   
+   void USART_Config()//串口配置函数
+   {
+    
+    USART_InitTypeDef USART_InitStructure;
+    USART_InitStructure.USART_BaudRate = 9600;
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    USART_InitStructure.USART_StopBits = USART_StopBits_1;
+    USART_InitStructure.USART_Parity = USART_Parity_No;
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+    USART_Init(USART1,&USART_InitStructure);  
+    USART_ITConfig(USART1,USART_IT_RXNE,ENABLE);//使能中断
+    USART_ITConfig(USART1,USART_IT_TXE,ENABLE);
+    USART_ClearFlag(USART1,USART_FLAG_TC);//清除待处理标志位
+    USART_Cmd(USART1,ENABLE);//使能外设
+    
+   }  
+   void delayms(int t)
+    {
+      double h;
+      h=t*7200;
+      while(h--);
+    }

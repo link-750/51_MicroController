@@ -1,0 +1,324 @@
+1.！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+#include<reg52.h>
+sbit PWM=P3^0;
+void timer0()
+{
+TMOD=0X01;
+TH0=0X8a;
+TL0=0Xd0;
+EA=1;
+ET0=1;
+PWM=1;
+TR0=1;
+
+}
+void delay()
+{int i=45000;
+while(i--);}
+
+void timer1() interrupt 1
+{
+	TH0=0X8a;
+	TL0=0Xd0;
+	PWM=0;
+  delay();
+  PWM=1;}
+
+void main()
+{
+	while(1)
+	{
+  timer0();
+  while(1);}
+}
+2.！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+#include<reg52.h>
+sbit PWM=P2^0;
+void timer0()
+{
+TMOD=0X01;
+EA=1;
+ET0=1;
+PWM=1;
+TR0=1;
+
+}
+void delay2()
+{
+int i=250;
+while(i--);
+PWM=0;}
+void delay1()
+{int i=160;
+while(i--);}
+
+void timer1() interrupt 1
+{
+	TH0=0Xb1;
+	TL0=0Xe0;
+	PWM=0;
+  delay1();
+  PWM=1;
+	
+	delay2();
+	delay2();
+	 PWM=1;
+	 
+}
+
+void main()
+{
+	while(1)
+	{
+  timer0();
+		while(1);
+}}
++++++++++++++++++++++++++++++++++++++++++++++++
+#include<reg52.h>
+sbit PWM=P0^0;
+void timer0()
+{
+TMOD=0X01;
+TH0=0X8a;
+TL0=0Xd0;
+EA=1;
+ET0=1;
+PWM=1;
+TR0=1;
+}
+void delay()
+{int i=110;
+while(i--);}
+
+void delay1()
+{int i=210;
+while(i--);}
+void jd(int j)
+{
+	int y=j;
+	if(y==-45)
+	{
+	PWM=0;
+  delay();
+  PWM=1;
+  delay();
+	PWM=0;
+   }
+	if(y==45)
+	{
+	PWM=0;
+  delay();
+  PWM=1;
+  delay1();
+	PWM=0;
+   }	
+ }
+void timer1() interrupt 1
+{
+	TH0=0X8a;
+	TL0=0Xd0;
+	}
+void main()
+{
+	int l=2;
+  timer0();
+  while(1)
+	{
+	  int h=1650,f;
+		f=l%2;
+		if(f)
+		jd(-45);
+		else
+    jd(45);
+	  l++;
+		while(h--);
+		
+	}
+}
+++++++++++++++++++++++
+#include<reg52.h>
+sbit PWM=P0^0;
+void timer0()
+{
+TMOD=0X01;
+TH0=0Xb1;
+TL0=0Xe0;
+EA=1;
+ET0=1;
+PWM=1;
+TR0=1;
+}
+void delay()
+{int i=110;
+while(i--);}
+
+void delay1()
+{int i=210;
+while(i--);}
+void jd(int j)
+{
+	int y=j;
+	if(y==-45)
+	{
+	PWM=0;
+  delay();
+  PWM=1;
+  delay();
+	PWM=0;
+   }
+	if(y==45)
+	{
+	PWM=0;
+  delay();
+  PWM=1;
+  delay1();
+	PWM=0;
+   }	
+ }
+void timer1() interrupt 1
+{
+	TH0=0Xb1;
+	TL0=0Xe0;
+	}
+void main()
+{
+	int l=2;
+  while(1)
+	{
+		int d,f=165000;
+		d=l%2;
+		if(d==0)
+		{	timer0;
+			jd(-45);
+			while(f--);
+     }
+			if(d==1)
+		{ timer0;
+			jd(45);
+			while(f--);}
+	    l++;
+	  }
+}
++++++++++++++++++++++++++++++++
+#include<reg52.h>
+sbit PWM=P0^0;
+void timer0()
+{
+TMOD=0X01;
+TH0=0Xb1;
+TL0=0Xe0;
+EA=1;
+ET0=1;
+TR0=1;
+}
+void delay()
+{int i=110;
+while(i--);}
+void delay1()
+{int j=210;
+while(j--);}
+void timer1() interrupt 1//?┷━a?┣┏┣┬?o??━D???DD♀??┣20msμ?＞?┷＼━?3?＼??┨│??♀
+{int o=1650;
+	TH0=0Xb1;
+	TL0=0Xe0;
+	while(o--);
+	
+	
+}
+void jd(int k)
+{if(k==1)
+	{
+    PWM=0;
+    delay();
+		PWM=1;
+    delay();
+		PWM=0;
+}
+if(k==-1)
+	{
+    PWM=0;
+    delay();
+		PWM=1;
+    delay1();
+		PWM=0;
+}}
+void main()
+{ int m=3;
+	int l=2310;
+	int j=2310;
+	while(1)
+	{if(m%2==0)
+	{
+		
+		jd(1);
+		while(j--);
+					}
+	if(m%2==1)
+	{
+		
+		 jd(-1);
+		while(l--);
+				}
+	m++;}
+}
+++++++++++++++++++++
+#include<reg52.h>
+sbit PWM=P0^0;
+void timer0()
+{
+TMOD=0X01;
+TH0=0X8a;
+TL0=0Xd0;
+EA=1;
+ET0=1;
+TR0=1;
+}
+void delay()
+{int i=110;
+while(i--);}
+
+void delay1()
+{int i=210;
+while(i--);}
+
+void jd(int j)
+{
+	int y=j;
+	if(y==-45)
+	{
+	PWM=0;
+  delay();
+  PWM=1;
+  delay();
+	PWM=0;
+   }
+	if(y==45)
+	{
+	PWM=0;
+  delay();
+  PWM=1;
+  delay1();
+	PWM=0;
+   }	
+ }
+void timer1() interrupt 1
+{
+	int y=3,k;
+	k=y%2;
+	TH0=0X8a;
+	TL0=0Xd0;
+	y++;
+	}
+void main()
+{
+  while(1)
+	{
+		timer0();
+		while(1)
+		{
+    jd(-45);
+    sjd(45);}
+		
+	  
+	}
+}

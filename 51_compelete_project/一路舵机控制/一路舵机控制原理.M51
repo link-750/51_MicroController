@@ -1,0 +1,191 @@
+BL51 BANKED LINKER/LOCATER V6.22                                                        05/08/2016  22:26:00  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
+D:\KEIL\C51\BIN\BL51.EXE 一路舵机控制原理.obj TO 一路舵机控制原理 RAMSIZE (256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  一路舵机控制原理.obj (________________)
+  D:\KEIL\C51\LIB\C51S.LIB (?C_STARTUP)
+  D:\KEIL\C51\LIB\C51S.LIB (?C?IMUL)
+  D:\KEIL\C51\LIB\C51S.LIB (?C?SIDIV)
+  D:\KEIL\C51\LIB\C51S.LIB (?C?SLDIV)
+  D:\KEIL\C51\LIB\C51S.LIB (?C_INIT)
+  D:\KEIL\C51\LIB\C51S.LIB (?C?UIDIV)
+  D:\KEIL\C51\LIB\C51S.LIB (?C?ULDIV)
+
+
+LINK MAP OF MODULE:  一路舵机控制原理 (________________)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     000AH     UNIT         ?DT?________________
+            DATA    0012H     0002H     UNIT         _DATA_GROUP_
+            IDATA   0014H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+                    0003H     0008H                  *** GAP ***
+            CODE    000BH     0003H     ABSOLUTE     
+                    000EH     07F2H                  *** GAP ***
+            CODE    0800H     016BH     UNIT         ?C?LIB_CODE
+            CODE    096BH     00D3H     UNIT         ?PR?_DUOJI?________________
+            CODE    0A3EH     008CH     UNIT         ?C_C51STARTUP
+            CODE    0ACAH     0044H     UNIT         ?C?LDIV
+            CODE    0B0EH     002DH     UNIT         ?PR?T0_TIMER?________________
+            CODE    0B3BH     001EH     UNIT         ?PR?_DELAY?________________
+            CODE    0B59H     000FH     UNIT         ?PR?INIT?________________
+            CODE    0B68H     0007H     UNIT         ?PR?MAIN?________________
+            CODE    0B6FH     0005H     UNIT         ?C_INITSEG
+
+
+
+OVERLAY MAP OF MODULE:   一路舵机控制原理 (________________)
+
+
+SEGMENT                                 DATA_GROUP 
+  +--> CALLED SEGMENT                 START    LENGTH
+-----------------------------------------------------
+?C_C51STARTUP                         -----    -----
+  +--> ?PR?MAIN?________________
+  +--> ?C_INITSEG
+
+?PR?MAIN?________________             -----    -----
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/08/2016  22:26:00  PAGE 2
+
+
+  +--> ?PR?_DUOJI?________________
+
+?PR?_DUOJI?________________           0012H    0002H
+
+
+
+SYMBOL TABLE OF MODULE:  一路舵机控制原理 (________________)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+  -------         MODULE        ________________
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:0090H         PUBLIC        P1
+  D:00A0H         PUBLIC        P2
+  D:00B0H         PUBLIC        P3
+  B:00A8H.7       PUBLIC        EA
+  C:0B0EH         PUBLIC        T0_timer
+  D:00A8H         PUBLIC        IE
+  C:0B3BH         PUBLIC        _delay
+  D:00B8H         PUBLIC        IP
+  D:0008H         PUBLIC        flag
+  C:096BH         PUBLIC        _duoji
+  C:0B68H         PUBLIC        main
+  D:0098H         PUBLIC        SCON
+  D:0089H         PUBLIC        TMOD
+  D:0088H         PUBLIC        TCON
+  C:0B59H         PUBLIC        init
+  B:00A8H.1       PUBLIC        ET0
+  D:008CH         PUBLIC        TH0
+  D:008AH         PUBLIC        TL0
+  B:0088H.4       PUBLIC        TR0
+  D:00C8H         PUBLIC        T2CON
+  D:000AH         PUBLIC        TH0_H
+  B:00A0H.0       PUBLIC        PWM
+  D:000CH         PUBLIC        TH0_L
+  D:000EH         PUBLIC        TL0_H
+  D:00D0H         PUBLIC        PSW
+  D:0010H         PUBLIC        TL0_L
+  -------         PROC          _DELAY
+  D:0006H         SYMBOL        z
+  -------         DO            
+  D:0006H         SYMBOL        x
+  D:0004H         SYMBOL        y
+  -------         ENDDO         
+  C:0B3BH         LINE#         9
+  C:0B3BH         LINE#         10
+  C:0B3BH         LINE#         12
+  C:0B44H         LINE#         13
+  C:0B58H         LINE#         14
+  -------         ENDPROC       _DELAY
+  -------         PROC          INIT
+  C:0B59H         LINE#         15
+  C:0B59H         LINE#         16
+  C:0B59H         LINE#         17
+  C:0B5CH         LINE#         18
+  C:0B5FH         LINE#         19
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/08/2016  22:26:00  PAGE 3
+
+
+  C:0B61H         LINE#         20
+  C:0B63H         LINE#         21
+  C:0B65H         LINE#         22
+  C:0B67H         LINE#         23
+  -------         ENDPROC       INIT
+  -------         PROC          _DUOJI
+  D:0012H         SYMBOL        jd
+  C:096BH         LINE#         25
+  C:096FH         LINE#         26
+  C:096FH         LINE#         27
+  C:099FH         LINE#         28
+  C:09D7H         LINE#         30
+  C:0A08H         LINE#         31
+  C:0A3DH         LINE#         32
+  -------         ENDPROC       _DUOJI
+  -------         PROC          MAIN
+  C:0B68H         LINE#         33
+  C:0B68H         LINE#         34
+  C:0B68H         LINE#         36
+  -------         ENDPROC       MAIN
+  -------         PROC          T0_TIMER
+  C:0B0EH         LINE#         39
+  C:0B10H         LINE#         43
+  C:0B18H         LINE#         44
+  C:0B18H         LINE#         45
+  C:0B22H         LINE#         46
+  C:0B30H         LINE#         47
+  C:0B30H         LINE#         48
+  C:0B38H         LINE#         49
+  -------         ENDPROC       T0_TIMER
+  -------         ENDMOD        ________________
+
+  -------         MODULE        ?C?IMUL
+  C:0800H         PUBLIC        ?C?IMUL
+  -------         ENDMOD        ?C?IMUL
+
+  -------         MODULE        ?C?SIDIV
+  C:0812H         PUBLIC        ?C?SIDIV
+  -------         ENDMOD        ?C?SIDIV
+
+  -------         MODULE        ?C?SLDIV
+  C:0ACAH         PUBLIC        ?C?SLDIV
+  -------         ENDMOD        ?C?SLDIV
+
+  -------         MODULE        ?C?UIDIV
+  C:0848H         PUBLIC        ?C?UIDIV
+  -------         ENDMOD        ?C?UIDIV
+
+  -------         MODULE        ?C?ULDIV
+  C:08D9H         PUBLIC        ?C?ULDIV
+  -------         ENDMOD        ?C?ULDIV
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAY?________________
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?INIT?________________
+BL51 BANKED LINKER/LOCATER V6.22                                                      05/08/2016  22:26:00  PAGE 4
+
+
+
+******************************************************************************
+* RESTRICTED VERSION WITH 0800H BYTE CODE SIZE LIMIT; USED: 013BH BYTE (15%) *
+******************************************************************************
+
+Program Size: data=21.0 xdata=0 code=890
+LINK/LOCATE RUN COMPLETE.  2 WARNING(S),  0 ERROR(S)

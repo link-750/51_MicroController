@@ -1,0 +1,48 @@
+#include<reg51.h>
+#include<intrins.h>
+
+typedef unsigned char uchar;
+typedef unsigned int uint;
+
+/**********函数声明********************/
+void SendTo595(uchar byteData);
+/***********************************/
+
+sbit SER = P3^4;    //p3.4脚控制串行数据输入
+sbit SCK = P3^5;    //串行输入时钟
+sbit RCK = P3^6;    //存储寄存器时钟
+
+
+void main()
+{
+
+       SendTo595(85);  //85的二进制:0101 0101
+       
+       while(1);
+
+
+}
+
+//功能:发送一个字节的数据给595，再并行输出
+void SendTo595(uchar byteData)
+{
+   int i=0;
+    for(;i<8;i++)
+   {
+           SER = byteData>>7;         //大家自己考量这2句
+        byteData= byteData<<1;      
+
+          SCK = 1;          //上升沿，让串行输入时钟变为高电平，并延时2个时钟周期
+        _nop_();
+        _nop_();
+
+        SCK = 0;          //变为低电平，为下次准备
+   }  
+   
+   /*位移寄存器数据准备完毕,转移到存储寄存器*/
+   RCK = 1;         //上升沿，让存储寄存器时钟变为高电平，并延时2个时钟周期
+   _nop_();
+   _nop_();
+   RCK = 0; 
+
+}

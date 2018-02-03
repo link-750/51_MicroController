@@ -1,0 +1,13 @@
+uchar SPI_RW(uchar byte)
+{
+ uchar i;
+    for(i=0; i<8; i++)          // 循环8次
+    {
+     MOSI = (byte & 0x80);   // byte最高位输出到MOSI
+     byte <<= 1;             // 低一位移位到最高位
+     SCK = 1;                // 拉高SCK，nRF24L01从MOSI读入1位数据，同时从MISO输出1位数据
+     byte |= MISO;        // 读MISO到byte最低位
+     SCK = 0;             // SCK置低
+    }
+    return(byte);            // 返回读出的一字节
+} 

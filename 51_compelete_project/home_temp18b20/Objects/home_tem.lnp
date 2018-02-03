@@ -1,0 +1,5 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\1602.obj" 
+TO ".\Objects\home_tem" 
+PRINT(".\Listings\home_tem.m51")

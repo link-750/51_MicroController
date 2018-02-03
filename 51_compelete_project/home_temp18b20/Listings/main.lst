@@ -1,0 +1,161 @@
+C51 COMPILER V9.52.0.0   MAIN                                                              02/01/2018 13:41:28 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "reg51.h"
+   2          #include <intrins.h> 
+   3          #include "1602.h"  
+   4          
+   5          //#include "DS18B20.h"  
+   6          void DS18B20_Delayus(uint us);  
+   7          void DS18B20_reset();  
+   8          void DS18B20_write(uchar dat);  
+   9          uchar DS18B20_data();  
+  10          uint read_temperature();  
+  11          uint TT;  //1820温度变量  
+  12          sbit DQ = P3^7;  
+  13            
+  14          
+  15          /*******************************************************************/  
+  16          /*                                                                 */  
+  17          /*us级延时函数                                                     */  
+  18          /*                                                                 */  
+  19          /*******************************************************************/  
+  20          void DS18B20_Delayus(uint us)  
+  21          {  
+  22   1          while(--us);  
+  23   1      }  
+  24          void DS18B20_reset()  
+  25          {  
+  26   1          uchar x = 0;  
+  27   1          DQ = 1;  
+  28   1          DS18B20_Delayus(16);  //稍做延时  
+  29   1          DQ = 0; //将DQ拉低  
+  30   1          DS18B20_Delayus(160);//延时400us~960us  
+  31   1          DQ = 1;    //拉高总线  
+  32   1          DS18B20_Delayus(28);//延时15us~60us  
+  33   1          x = DQ; //如果=0则初始化成功 =1则初始化失败  
+  34   1          DS18B20_Delayus(40);//延时60us~240us  
+  35   1      }  
+  36          /*******************************************************************/  
+  37          /*                                                                 */  
+  38          /* 写一个字节                                                      */  
+  39          /*                                                                 */  
+  40          /*******************************************************************/  
+  41          void DS18B20_write(uchar dat)  
+  42          {  
+  43   1           uchar i;  
+  44   1           for(i = 8; i > 0; i--)  
+  45   1           {  
+  46   2               DQ = 0;  
+  47   2               DQ = dat & 0x01;  
+  48   2               DS18B20_Delayus(10);  
+  49   2               DQ = 1;  
+  50   2               dat >>= 1;  
+  51   2           }  
+  52   1      }  
+  53          /*******************************************************************/  
+  54          /*                                                                 */  
+C51 COMPILER V9.52.0.0   MAIN                                                              02/01/2018 13:41:28 PAGE 2   
+
+  55          /* 读一个字节                                                      */  
+  56          /*                                                                 */  
+  57          /*******************************************************************/  
+  58          uchar DS18B20_data()  
+  59          {  
+  60   1          uchar i,dat;  
+  61   1          for (i = 8; i > 0; i--)  
+  62   1          {  
+  63   2            DQ = 0; // 给脉冲信号  
+  64   2            dat >>= 1;  
+  65   2            DQ = 1; // 给脉冲信号  
+  66   2            if(DQ)  
+  67   2              dat |= 0x80;  
+  68   2            DS18B20_Delayus(8);  
+  69   2          }  
+  70   1          return dat;  
+  71   1      }  
+  72          /*******************************************************************/  
+  73          /*                                                                 */  
+  74          /* 读取温度                                                        */  
+  75          /*                                                                 */  
+  76          /*******************************************************************/  
+  77          uint read_temperature()  
+  78          {  
+  79   1          uchar a,b;  
+  80   1          uint t = 0;  
+  81   1          float tt = 0;  
+  82   1        
+  83   1          DS18B20_reset();//DS18B20复位  
+  84   1          DS18B20_write(0xcc); //跳过读序号列号的操作  
+  85   1          DS18B20_write(0x44); //启动温度转换     
+  86   1        
+  87   1          DS18B20_reset();//DS18B20复位  
+  88   1          DS18B20_write(0xcc); //跳过读序号列号的操作  
+  89   1          DS18B20_write(0xbe); //读取温度寄存器  
+  90   1          a = DS18B20_data(); //读低8位  
+  91   1          b = DS18B20_data();  //读高8位  
+  92   1          t=b;  
+  93   1          t<<=8;  
+  94   1          t=t|a;  
+  95   1          tt=t*0.0625;  
+  96   1          t= tt*10+0.5; //放大10倍输出并四舍五入  
+  97   1          return(t);  
+  98   1      } 
+  99          //main()
+ 100          //{
+ 101          //  unsigned char i=0,g=0,s=0,b=0;
+ 102          //  LCD_init();
+ 103          //  while(1)
+ 104          //  {
+ 105          //    i=ReadTemperature();//读温度
+ 106          //    g=i%10;//温度个位
+ 107          //    s=(i/10)%10;
+ 108          //    b=i/100;
+ 109          //    
+ 110          //    LCD_disp_char(4,1,g+48);
+ 111          //    LCD_disp_char(3,1,s+48);
+ 112          //    LCD_disp_char(2,1,b+48);
+ 113          //  }
+ 114          //}
+ 115          void main()  
+ 116          {  
+C51 COMPILER V9.52.0.0   MAIN                                                              02/01/2018 13:41:28 PAGE 3   
+
+ 117   1            uchar tab1,tab2,tab3;       
+ 118   1            LCD_init();  
+ 119   1            DS18B20_reset();   
+ 120   1            while(1)  
+ 121   1            {  
+ 122   2                  TT = read_temperature(); //读温度   
+ 123   2                  tab1 = TT / 100;              
+ 124   2                  LCD_disp_char(8,1,tab1+48);//十位
+ 125   2                  tab2= TT / 10 - tab1*10;             
+ 126   2                  LCD_disp_char(9,1,tab2+48); //个位           
+ 127   2                  LCD_disp_char(10,1,'.');//小数点
+ 128   2                  tab3 = TT - tab1*100 - tab2*10;             
+ 129   2                  LCD_disp_char(11,1,tab3+48);//小数位            
+ 130   2                  LCD_disp_char(12,1,'C');//温度符号
+ 131   2                    
+ 132   2            }  
+ 133   1      } 
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    330    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2       7
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

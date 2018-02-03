@@ -1,0 +1,173 @@
+#define READ_SECOND_ADDRESS 0x81  //秒 寄存地址
+#define READ_MINUTE_ADDRESS 0x83  //分 寄存地址
+#define READ_HOUR_ADDRESS 0x85  //时 寄存地址
+#define READ_DATE_ADDRESS 0x87  //日 寄存地址
+#define READ_MONTH_ADDRESS 0x89  //月 寄存地址
+#define READ_WEEK_ADDRESS 0x8b //周 寄存地址
+#define READ_YEAR_ADDRESS 0x8d  //年 寄存地址
+
+#define WRITE_CONTROL_ADDRESS 0x8e //写控制寄存器地址
+#define READ_CONTROL_ADDRESS 0x8f //读控制寄存器地址
+
+#define WRITE_SECOND_ADDRESS 0x80  //秒 寄存地址
+#define WRITE_MINUTE_ADDRESS 0x82  //分 寄存地址
+#define WRITE_HOUR_ADDRESS 0x84  //时 寄存地址
+#define WRITE_DATE_ADDRESS 0x86  //日 寄存地址
+#define WRITE_MONTH_ADDRESS 0x88  //月 寄存地址
+#define WRITE_WEEK_ADDRESS 0x8a  //周 寄存地址
+#define WRITE_YEAR_ADDRESS 0x8c  //年 寄存地址
+
+#define OPEN_PROTECT    0x80    //开写保护
+#define CLOSE_PROTECT   0x00    //关写保护
+
+#define  uchar unsigned char
+#define uint unsigned int
+
+
+#include"reg52.h"
+sbit CE=P3^5;//片选信号
+sbit SCL=P3^6;//时钟信号
+sbit SDA=P3^4;//数据传输
+sbit du=P1^0;//段选引脚使能，位选低电平有效
+uchar time[]={1,1,1,1,1,1,1};//s,m,h,d,mon,w,y
+uchar timedata[7];
+//函数声明
+void delay_ms(int);//延时函数
+uchar Read_Byte(uchar);
+void UART_Send_Byte(uchar);
+   void Write_Byte(uchar dat)//写入寄存器的值
+{
+  int i;
+	CE=0;
+  delay_ms(1);
+	CE=1;
+	for(i=0;i<8;i++)
+	 {
+      SCL=0;
+		 delay_ms(1);	
+		 SDA=dat&0x01;
+		 dat>>=1;
+		 SCL=1;
+		 delay_ms(1);	
+   }
+	 CE=0;
+}
+  void Read_Time()//读出的时间值
+{
+	int i;
+	for(i=0;i<7;i++)
+	{
+    timedata[0]=Read_Byte(READ_SECOND_ADDRESS);
+		timedata[1]=Read_Byte(READ_MINUTE_ADDRESS);
+		timedata[2]=Read_Byte(READ_HOUR_ADDRESS);
+		timedata[3]=Read_Byte(READ_DATE_ADDRESS);
+		timedata[4]=Read_Byte(READ_MONTH_ADDRESS);
+		timedata[5]=Read_Byte(READ_WEEK_ADDRESS);
+		timedata[6]=Read_Byte(READ_YEAR_ADDRESS);
+		
+  }
+}
+   void Write_Time(uchar addr,uchar dat)//写入的时间值
+{
+  Write_Byte(addr);//写入地址
+	Write_Byte(dat);//写入数据
+	
+}
+  void Ds1302_Init()//初始化函数
+{
+	int k,temp=0;
+  Write_Time(0x8e,0x00);//清除写保护
+	for(k=0;k<7;k++)//将时间值转换成BCD码(将16进制数据转成10进制)
+	{
+    temp=time[k]/10;
+		time[k]=time[k]%10;
+		time[k]=time[k]+temp*16;
+
+  }
+	//将年月日等信息写入寄存器
+	Write_Time( WRITE_SECOND_ADDRESS, time[0] );//s//将bcd码写入相应寄存器
+	Write_Time( WRITE_MINUTE_ADDRESS, time[1] );//m
+	Write_Time( WRITE_HOUR_ADDRESS, time[2] );//h
+	Write_Time( WRITE_DATE_ADDRESS, time[3] );//d
+	Write_Time( WRITE_MONTH_ADDRESS, time[4] );//mo
+	Write_Time( WRITE_WEEK_ADDRESS, time[5] );//w
+	Write_Time(WRITE_YEAR_ADDRESS,time[6] );//y
+	
+	Write_Time(0x8e,0x80);//开写保护
+}
+  
+  
+ 
+ 
+  uchar Read_Byte(uchar addr)//读出寄存器的值
+{
+  int m;
+	unsigned char value=0x00;
+  Write_Byte(addr);//写入地址
+	
+	
+	for(m=0;m<8;m++)
+	 {
+		  CE=0;
+	    delay_ms(2);
+	    CE=1;
+      value>>=1;
+		 SCL=0;
+		 delay_ms(1);
+		 if(SDA)
+		 {
+        value|=0x80;
+			 
+      }
+			SCL=1;
+    }
+		CE=0;
+		
+		return value;
+}
+  
+   void delay_ms(int t)//延时函数
+{
+		int i=0,k=0;
+    for(i=0;i<t;i++)
+		 for(k=0;k<110;k++);
+}
+ void uart_init(void)
+{
+    ET1=0;
+    TMOD = 0x21;        // 定时器1工作在方式2（自动重装）
+    SCON = 0x50;        // 10位uart，允许串行接受
+
+    TH1 = 0xFD;
+    TL1 = 0xFD;
+
+    TR1 = 1;
+}
+
+/**
+ * UART 发送一字节
+*/
+void UART_Send_Byte(uchar dat)
+{
+        SBUF = dat;
+        while (TI == 0);
+        TI = 0;
+}
+    void main()//主函数
+{
+  Ds1302_Init();
+	uart_init();
+
+	
+	while(1)
+	{
+    Read_Time();
+		UART_Send_Byte(timedata[5]);
+		delay_ms(500);
+		/*du=1;
+	  P2=(uchar)timedata[0];//段选
+	  du=0;
+	  P0=~0x80;//位选，低电平有效*/
+		
+   }
+}
